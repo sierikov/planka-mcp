@@ -1,0 +1,186 @@
+name: Release
+
+# Pushing a tag like v0.1.0 publishes a release, job by job:
+#   tag       checks the tag and reads the version from it
+#   build     runs the tests, then scripts/release.sh builds every release file into
+#             dist/: a binary and an .mcpb bundle for macOS, Linux and Windows
+#             (amd64 and arm64 each), and server.json for the MCP Registry
+#   image     pushes the multi-arch Docker image to ghcr.io
+#   release   creates the GitHub release with the binaries and bundles
+#   registry  publishes server.json to the MCP Registry
+#
+# The tag is the only place the version lives: the binaries, bundles, server.json
+# and the image all get it from here. `make dist VERSION=0.1.0` builds the same
+# files locally.
+#
+# Each job gets only the permissions it needs, so third-party actions never run with
+# more than their own job's token, and every action is pinned to a commit. The image
+# is pushed only after the tests pass in `build`, and before the GitHub release is
+# created, so a failed image build never leaves a release without an image.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+env:
+  IMAGE: ghcr.io/sierikov/planka-mcp   # server.json names it too
+  # The MCP Registry's publisher, for the build job's check and the registry job's publish.
+  PUBLISHER_URL: https://github.com/modelcontextprotocol/registry/releases/download/v1.8.1/mcp-publisher_linux_amd64.tar.gz
+  # From registry_1.8.1_checksums.txt in that release; change both lines together.
+  PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+
+jobs:
+  tag:
+    name: Read the version from the tag
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      prerelease: ${{ steps.version.outputs.prerelease }}
+      latest_tag: ${{ steps.version.outputs.latest_tag }}
+    steps:
+      - name: Read the version from the tag
+        id: version
+        run: |
+          tag=$GITHUB_REF_NAME
+          if [[ ! $tag =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::tag $tag is not vMAJOR.MINOR.PATCH or vMAJOR.MINOR.PATCH-prerelease"
+            exit 1
+          fi
+          echo "version=${tag#v}" >> "$GITHUB_OUTPUT"
+
+          # A pre-release (v0.2.0-rc.1) is marked as one and never becomes the :latest image.
+          if [[ $tag == *-* ]]; then
+            echo "prerelease=true" >> "$GITHUB_OUTPUT"
+            echo "latest_tag=" >> "$GITHUB_OUTPUT"
+          else
+            echo "prerelease=false" >> "$GITHUB_OUTPUT"
+            echo "latest_tag=$IMAGE:latest" >> "$GITHUB_OUTPUT"
+          fi
+
+  build:
+    name: Test and build the release files
+    needs: tag
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ needs.tag.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: false   # a release never builds from a cache another run could have written
+
+      - name: Test
+        run: go test ./...
+
+      - name: Build the binaries, .mcpb bundles and server.json
+        run: scripts/release.sh "$VERSION"
+
+      - name: Show server.json
+        run: cat dist/server.json
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL --max-time 60 -o mcp-publisher.tar.gz "$PUBLISHER_URL"
+          echo "${PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+
+      # The registry checks the file itself, not whether the release files or the image exist
+      # yet, so a server.json it would refuse stops the release before anything is published.
+      - name: Check server.json with the MCP Registry
+        run: ./mcp-publisher validate dist/server.json
+
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+          retention-days: 7
+
+  image:
+    name: Push the Docker image
+    needs: [tag, build]   # never push an image whose tests failed
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write   # push the image to ghcr.io
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+
+      - uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3.7.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The Dockerfile cross-compiles on the runner, so no QEMU is needed.
+      # provenance: false keeps the tag a plain two-platform index, which is what the registry reads.
+      - uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: true
+          provenance: false
+          build-args: VERSION=${{ needs.tag.outputs.version }}
+          tags: |
+            ${{ env.IMAGE }}:${{ needs.tag.outputs.version }}
+            ${{ needs.tag.outputs.latest_tag }}
+
+  release:
+    name: Create the GitHub release
+    needs: [tag, build, image]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write   # create the GitHub release
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+
+      - uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2.6.2
+        with:
+          generate_release_notes: true
+          prerelease: ${{ needs.tag.outputs.prerelease == 'true' }}
+          # The binaries and bundles with the license texts they need; server.json is not a release file.
+          files: |
+            dist/planka-mcp-*
+            dist/LICENSE
+            dist/THIRD_PARTY_NOTICES
+            dist/checksums.txt
+
+  registry:
+    name: Publish to the MCP Registry
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # OIDC login to the MCP Registry
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+
+      - name: Install mcp-publisher
+        run: |
+          curl -fsSL --max-time 60 -o mcp-publisher.tar.gz "$PUBLISHER_URL"
+          echo "${PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
+          tar xzf mcp-publisher.tar.gz mcp-publisher
+          cp dist/server.json server.json
+
+      # The registry is in preview: a failure here must not fail the release.
+      - name: Log in to the MCP Registry
+        run: ./mcp-publisher login github-oidc
+        continue-on-error: true
+
+      - name: Publish server.json
+        run: ./mcp-publisher publish
+        continue-on-error: true

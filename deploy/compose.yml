@@ -1,0 +1,50 @@
+# Local Planka v2 for the e2e tests and fixture capture. Not for production:
+# the credentials below are throwaway values for a stack on localhost.
+# PLANKA_VERSION and PLANKA_PORT pick another Planka; give such a stack its own
+# project name (docker compose -p) so it gets its own database.
+name: planka-mcp-dev
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: planka
+      POSTGRES_USER: postgres
+      POSTGRES_HOST_AUTH_METHOD: trust
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d planka"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+
+  planka:
+    image: ghcr.io/plankanban/planka:${PLANKA_VERSION:-2.2.1}
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:${PLANKA_PORT:-3333}:1337"
+    environment:
+      BASE_URL: http://localhost:${PLANKA_PORT:-3333}
+      DATABASE_URL: postgresql://postgres@postgres/planka
+      SECRET_KEY: planka-mcp-local-dev-secret-key-not-for-production
+      DEFAULT_ADMIN_EMAIL: admin@example.com
+      DEFAULT_ADMIN_PASSWORD: admin-password-123
+      DEFAULT_ADMIN_NAME: Admin
+      DEFAULT_ADMIN_USERNAME: admin
+    volumes:
+      - planka-data:/app/data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:1337/api/bootstrap >/dev/null || exit 1"]
+      interval: 3s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
+
+volumes:
+  db-data:
+  planka-data:

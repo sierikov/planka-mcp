@@ -1,0 +1,28 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to edit the text of a comment on a Planka card; it replaces the old text. Returns the comment (id, date, text) without its author.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "comment_id": {
+        "description": "ID of the comment to edit",
+        "type": "string"
+      },
+      "text": {
+        "description": "new comment text (markdown); it replaces the old text",
+        "type": "string"
+      }
+    },
+    "required": [
+      "comment_id",
+      "text"
+    ],
+    "type": "object"
+  },
+  "name": "update_comment",
+  "title": "Edit comment"
+}

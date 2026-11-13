@@ -1,0 +1,54 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to append tasks to a checklist on a Planka card, either plain names or links to other cards, many in one call. Returns the checklist with all its tasks and their ids.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "items": {
+        "description": "tasks to append, in order; each has a name or a link",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "link": {
+              "description": "card ID, URL or title to link as the task, instead of a name; a match in the description alone is refused",
+              "type": "string"
+            },
+            "name": {
+              "description": "task text; give either name or link",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "task_list": {
+        "description": "checklist name (default Tasks); created when the card lacks it",
+        "type": "string"
+      }
+    },
+    "required": [
+      "card",
+      "items"
+    ],
+    "type": "object"
+  },
+  "name": "add_tasks",
+  "title": "Add tasks"
+}

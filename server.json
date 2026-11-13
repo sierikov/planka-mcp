@@ -1,0 +1,102 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.sierikov/planka-mcp",
+  "title": "MCP server for Planka (unofficial)",
+  "description": "Find, read and manage cards on your Planka v2 boards: search, move, comment, edit, checklists.",
+  "repository": {
+    "url": "https://github.com/sierikov/planka-mcp",
+    "source": "github"
+  },
+  "websiteUrl": "https://github.com/sierikov/planka-mcp",
+  "version": "0.0.0-dev",
+  "packages": [
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-macos-arm64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-macos-amd64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-linux-amd64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-linux-arm64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-windows-amd64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "mcpb",
+      "identifier": "https://github.com/sierikov/planka-mcp/releases/download/v0.0.0-dev/planka-mcp-windows-arm64.mcpb",
+      "fileSha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "transport": {
+        "type": "stdio"
+      }
+    },
+    {
+      "registryType": "oci",
+      "identifier": "ghcr.io/sierikov/planka-mcp:0.0.0-dev",
+      "runtimeHint": "docker",
+      "runtimeArguments": [
+        {
+          "type": "named",
+          "name": "-p",
+          "value": "127.0.0.1:8080:8080"
+        }
+      ],
+      "environmentVariables": [
+        {
+          "name": "PLANKA_URL",
+          "description": "Base URL of your Planka v2 instance, e.g. https://planka.example.com. Do not set PLANKA_API_KEY: each client sends its own key.",
+          "placeholder": "https://planka.example.com",
+          "isRequired": true
+        }
+      ],
+      "transport": {
+        "type": "streamable-http",
+        "url": "http://localhost:8080/mcp",
+        "headers": [
+          {
+            "name": "Authorization",
+            "description": "Your personal Planka API key as a bearer token. A Planka admin creates it for your user.",
+            "value": "Bearer {planka_api_key}",
+            "isRequired": true,
+            "isSecret": true,
+            "variables": {
+              "planka_api_key": {
+                "description": "Your Planka API key",
+                "isRequired": true,
+                "isSecret": true
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}

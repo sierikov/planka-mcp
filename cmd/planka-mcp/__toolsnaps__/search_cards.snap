@@ -1,0 +1,48 @@
+{
+  "annotations": {
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Use this to find Planka cards by words and filters. A card matches when all words are in its title or all in its description, title matches first; returns compact card lines without descriptions, and how many more matched past the limit.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "assignee": {
+        "description": "only cards assigned to this person, by name; \"me\" is you",
+        "type": "string"
+      },
+      "board": {
+        "description": "only this board (ID, URL or name)",
+        "type": "string"
+      },
+      "include_archived": {
+        "description": "also search archived cards (default false)",
+        "type": "boolean"
+      },
+      "label": {
+        "description": "only cards with this label, by name",
+        "type": "string"
+      },
+      "limit": {
+        "description": "most cards to return (default 20, at most 100)",
+        "type": "integer"
+      },
+      "list": {
+        "description": "only this list, by name",
+        "type": "string"
+      },
+      "project": {
+        "description": "only boards of this project, by name",
+        "type": "string"
+      },
+      "query": {
+        "description": "words to find; optional, omit to list cards matching the filters",
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "name": "search_cards",
+  "title": "Search cards"
+}

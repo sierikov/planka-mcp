@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to remove a task from a checklist on a Planka card for good. Returns the deleted task's id.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "task_id": {
+        "description": "ID of the task to delete, from get_card",
+        "type": "string"
+      }
+    },
+    "required": [
+      "task_id"
+    ],
+    "type": "object"
+  },
+  "name": "delete_task",
+  "title": "Delete task"
+}

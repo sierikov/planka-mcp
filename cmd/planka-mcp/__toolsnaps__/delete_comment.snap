@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to remove a comment from a Planka card for good. Returns the deleted comment's id.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "comment_id": {
+        "description": "ID of the comment to delete",
+        "type": "string"
+      }
+    },
+    "required": [
+      "comment_id"
+    ],
+    "type": "object"
+  },
+  "name": "delete_comment",
+  "title": "Delete comment"
+}

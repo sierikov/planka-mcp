@@ -1,0 +1,103 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to edit a Planka card's title, description, due date, labels, assignees or stopwatch; fields you leave out stay as they are, and description replaces the whole text, so read it with get_card first to append. Returns the card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "add_assignees": {
+        "description": "people to assign, by name; \"me\" is you",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "add_labels": {
+        "description": "label names to add; a name the board lacks is an error unless create_labels is set",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "create_labels": {
+        "description": "create the labels the board lacks (default false, so a typo is not made into a new label)",
+        "type": "boolean"
+      },
+      "description": {
+        "description": "new description (markdown); it replaces the whole text, and an empty string clears it",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "due": {
+        "description": "due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339, or null/empty string to clear",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "due_completed": {
+        "description": "mark the due date done (true) or not done (false)",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "remove_assignees": {
+        "description": "people to unassign, by name",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "remove_labels": {
+        "description": "label names to remove",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "stopwatch": {
+        "description": "start, stop or reset the card's stopwatch",
+        "type": "string"
+      },
+      "title": {
+        "description": "new title",
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    },
+    "required": [
+      "card"
+    ],
+    "type": "object"
+  },
+  "name": "update_card",
+  "title": "Update card"
+}

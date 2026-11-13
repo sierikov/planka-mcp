@@ -1,0 +1,145 @@
+version: "2"
+
+run:
+  timeout: 5m
+  build-tags:
+    - e2e # lint the //go:build e2e suite in e2e/ too
+
+linters:
+  default: none
+  enable:
+    # Correctness
+    - errcheck
+    - govet
+    - ineffassign
+    - staticcheck
+
+    # Error handling
+    - errorlint
+
+    # Style & readability
+    - revive
+    - misspell
+    - godot
+    - usestdlibvars
+
+    # Code quality
+    - gocritic
+    - unconvert
+    - prealloc
+    - exhaustive
+    - nolintlint
+
+    # Complexity
+    - gocognit
+    - cyclop
+
+    # Testing
+    - testifylint
+    - thelper
+
+    # Security
+    - gosec
+    - bodyclose
+    - noctx
+
+    # Architecture
+    - depguard
+
+  settings:
+    # Layering: tools -> service -> planka. Each layer only knows the one below it.
+    depguard:
+      rules:
+        planka:
+          files:
+            - "**/internal/planka/**"
+          deny:
+            - pkg: github.com/sierikov/planka-mcp/internal/service
+              desc: the API client must not depend on the service layer
+            - pkg: github.com/sierikov/planka-mcp/internal/tools
+              desc: the API client must not depend on the MCP tools
+            - pkg: github.com/modelcontextprotocol/go-sdk
+              desc: the API client must not know about MCP
+        service:
+          files:
+            - "**/internal/service/**"
+          deny:
+            - pkg: github.com/sierikov/planka-mcp/internal/tools
+              desc: services must not depend on the MCP tools
+            - pkg: github.com/modelcontextprotocol/go-sdk
+              desc: services must not know about MCP
+        tools:
+          files:
+            - "**/internal/tools/**"
+            - "!$test"
+          deny:
+            - pkg: github.com/sierikov/planka-mcp/internal/planka
+              desc: tools talk to services, never to the API client (wiring tests excepted)
+
+    revive:
+      rules:
+        - name: exported
+        - name: error-return
+        - name: error-strings
+        - name: error-naming
+        - name: increment-decrement
+        - name: var-naming
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: time-naming
+        - name: unexported-return
+        - name: indent-error-flow
+        - name: errorf
+        - name: context-as-argument
+        - name: context-keys-type
+        - name: if-return
+        - name: early-return
+        - name: unreachable-code
+        - name: unnecessary-stmt
+
+    godot:
+      scope: declarations
+      period: true
+
+    gocognit:
+      min-complexity: 30
+
+    cyclop:
+      max-complexity: 13
+
+    gocritic:
+      enabled-tags:
+        - diagnostic
+        - style
+        - performance
+      disabled-checks:
+        - hugeParam
+        - rangeValCopy
+
+    gosec:
+      excludes:
+        - G104  # covered by errcheck
+
+    testifylint:
+      enable-all: true
+
+    exhaustive:
+      default-signifies-exhaustive: true
+
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/sierikov/planka-mcp
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0

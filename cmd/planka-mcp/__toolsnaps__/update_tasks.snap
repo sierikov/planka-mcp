@@ -1,0 +1,53 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to tick, untick or rename tasks on Planka cards, several in one call. A task that links a card cannot be changed: Planka ticks it when that card moves to a closed list such as Done. Returns the changed tasks.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "items": {
+        "description": "tasks to change; each has a task_id and a completed or name",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "completed": {
+              "description": "tick (true) or untick (false) the task",
+              "type": [
+                "null",
+                "boolean"
+              ]
+            },
+            "name": {
+              "description": "new task text",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "task_id": {
+              "description": "ID of the task, from get_card",
+              "type": "string"
+            }
+          },
+          "required": [
+            "task_id"
+          ],
+          "type": "object"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      }
+    },
+    "required": [
+      "items"
+    ],
+    "type": "object"
+  },
+  "name": "update_tasks",
+  "title": "Update tasks"
+}
