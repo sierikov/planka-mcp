@@ -2,7 +2,7 @@
 
 # The build stage always runs on the builder's own platform and cross-compiles, so a
 # multi-arch build (linux/amd64 + linux/arm64) never runs the Go toolchain under QEMU.
-FROM --platform=$BUILDPLATFORM golang:1.26.11@sha256:957952ae74dc010608717144399a59a2c6e82ea03d63be1c7ff6577c5a135f93 AS build
+FROM --platform=$BUILDPLATFORM golang:1.27.0@sha256:4013ae0f9e7994f8535c58c811f8f863fbed38b72e0d51e6592156f758d66146 AS build
 ARG TARGETOS
 ARG TARGETARCH
 ARG VERSION=dev
