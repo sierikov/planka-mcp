@@ -1,6 +1,6 @@
 module github.com/sierikov/planka-mcp
 
-go 1.26
+go 1.26.0
 
 toolchain go1.26.11
 
@@ -9,7 +9,7 @@ tool github.com/vektra/mockery/v3
 require (
 	github.com/modelcontextprotocol/go-sdk v1.8.0
 	github.com/stretchr/testify v1.12.1
-	golang.org/x/sync v0.20.0
+	golang.org/x/sync v0.25.0
 )
 
 require (
