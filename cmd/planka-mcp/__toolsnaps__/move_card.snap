@@ -1,0 +1,40 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to change a Planka card's status by moving it to another list, or to the archive with list=archive. board only narrows the search for the card; to_board is the destination. Returns the card as a compact line.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look for the card on when card is a title (ID, URL or name); it is not the destination",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "list": {
+        "description": "destination list, by name on the destination board, or archive",
+        "type": "string"
+      },
+      "position": {
+        "description": "top (default) or bottom of the list",
+        "type": "string"
+      },
+      "to_board": {
+        "description": "destination board when moving across boards (default: the card's own board)",
+        "type": "string"
+      }
+    },
+    "required": [
+      "card",
+      "list"
+    ],
+    "type": "object"
+  },
+  "name": "move_card",
+  "title": "Move card"
+}

@@ -1,0 +1,125 @@
+{
+  "manifest_version": "0.3",
+  "name": "planka-mcp",
+  "display_name": "MCP server for Planka (unofficial)",
+  "version": "0.0.0-dev",
+  "description": "Find, read and manage cards on your Planka v2 kanban boards: move them, comment, edit, and tick off checklists.",
+  "author": {
+    "name": "Artem Sierikov"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sierikov/planka-mcp"
+  },
+  "license": "MIT",
+  "icon": "icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "planka-mcp",
+    "mcp_config": {
+      "command": "${__dirname}/planka-mcp",
+      "args": [],
+      "env": {
+        "PLANKA_URL": "${user_config.planka_url}",
+        "PLANKA_API_KEY": "${user_config.planka_api_key}",
+        "PLANKA_USERNAME": "${user_config.planka_username}",
+        "PLANKA_PASSWORD": "${user_config.planka_password}"
+      }
+    }
+  },
+  "tools": [
+    {
+      "name": "list_boards",
+      "description": "List the boards you can see, grouped by project"
+    },
+    {
+      "name": "get_board",
+      "description": "Show a board as a kanban: lists, labels, members and cards"
+    },
+    {
+      "name": "search_cards",
+      "description": "Find cards by text, board, list, label or assignee"
+    },
+    {
+      "name": "get_card",
+      "description": "Get a card with its description, tasks, attachments and latest comments"
+    },
+    {
+      "name": "list_comments",
+      "description": "Page through the comments of a card"
+    },
+    {
+      "name": "create_card",
+      "description": "Create a card on a board, with labels, assignees and a due date"
+    },
+    {
+      "name": "move_card",
+      "description": "Move a card to another list or board, or to the archive"
+    },
+    {
+      "name": "update_card",
+      "description": "Edit a card's title, description, due date, labels, assignees or stopwatch"
+    },
+    {
+      "name": "delete_card",
+      "description": "Permanently delete a card"
+    },
+    {
+      "name": "add_comment",
+      "description": "Comment on a card"
+    },
+    {
+      "name": "update_comment",
+      "description": "Edit a comment"
+    },
+    {
+      "name": "delete_comment",
+      "description": "Delete a comment"
+    },
+    {
+      "name": "add_tasks",
+      "description": "Add tasks, or links to other cards, to a card's checklist"
+    },
+    {
+      "name": "update_tasks",
+      "description": "Tick, untick or rename checklist tasks"
+    },
+    {
+      "name": "delete_task",
+      "description": "Delete a checklist task"
+    }
+  ],
+  "user_config": {
+    "planka_url": {
+      "type": "string",
+      "title": "Planka URL",
+      "description": "Base URL of your Planka instance (e.g. https://planka.example.com). Planka v2.0 or later.",
+      "required": true,
+      "sensitive": false
+    },
+    "planka_api_key": {
+      "type": "string",
+      "title": "API Key",
+      "description": "Your personal Planka API key, created for your user by a Planka admin (only admins can create keys). Leave empty to log in with username and password instead.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    },
+    "planka_username": {
+      "type": "string",
+      "title": "Username or email",
+      "description": "For users without an API key: your Planka username or email. Used together with the password; when set, it is used instead of the API key.",
+      "required": false,
+      "sensitive": false,
+      "default": ""
+    },
+    "planka_password": {
+      "type": "string",
+      "title": "Password",
+      "description": "Your Planka password, used with the username above. Not for accounts that use single sign-on or two-factor authentication: those need an API key.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    }
+  }
+}

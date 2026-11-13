@@ -1,0 +1,28 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this only when a Planka card must be gone: it permanently deletes; to keep it, move it to the archive with move_card list=archive. Returns the deleted card's id and title.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      }
+    },
+    "required": [
+      "card"
+    ],
+    "type": "object"
+  },
+  "name": "delete_card",
+  "title": "Delete card"
+}

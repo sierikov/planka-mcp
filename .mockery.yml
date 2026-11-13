@@ -1,0 +1,14 @@
+# Mocks are generated into the package that declares the interface, as
+# mocks_test.go, so they are only compiled for that package's tests.
+# Regenerate with: make mocks
+all: true
+dir: "{{.InterfaceDir}}"
+filename: mocks_test.go
+force-file-write: true
+formatter: goimports
+pkgname: "{{.SrcPackageName}}"
+structname: "Mock{{.InterfaceName}}"
+template: testify
+packages:
+  github.com/sierikov/planka-mcp/internal/service: {}
+  github.com/sierikov/planka-mcp/internal/tools: {}

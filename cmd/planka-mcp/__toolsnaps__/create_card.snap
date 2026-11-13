@@ -1,0 +1,69 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add a new card to a Planka list. Returns the new card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "assignees": {
+        "description": "people to assign, by name; \"me\" is you",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "board": {
+        "description": "board to create the card on (ID, URL or name)",
+        "type": "string"
+      },
+      "create_labels": {
+        "description": "create the labels the board lacks (default false, so a typo is not made into a new label)",
+        "type": "boolean"
+      },
+      "description": {
+        "description": "card description (markdown)",
+        "type": "string"
+      },
+      "due": {
+        "description": "due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339",
+        "type": "string"
+      },
+      "labels": {
+        "description": "label names; a name the board lacks is an error unless create_labels is set",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "list": {
+        "description": "list to put it in, by name (default: the board's first active list)",
+        "type": "string"
+      },
+      "position": {
+        "description": "top (default) or bottom of the list",
+        "type": "string"
+      },
+      "title": {
+        "description": "card title",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "title"
+    ],
+    "type": "object"
+  },
+  "name": "create_card",
+  "title": "Create card"
+}

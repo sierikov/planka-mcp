@@ -1,0 +1,29 @@
+# Weekly update PRs for Go modules, the workflows' pinned actions and the
+# Dockerfile's pinned base images, one grouped PR per ecosystem. The Go
+# toolchain line in go.mod is not covered: the vulncheck job in go.yml flags a
+# toolchain that needs a newer patch release.
+version: 2
+updates:
+  - package-ecosystem: gomod
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      go-modules:
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: docker
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      base-images:
+        patterns: ["*"]

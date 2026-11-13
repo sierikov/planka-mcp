@@ -1,0 +1,6 @@
+/planka-mcp
+*.mcpb
+dist/
+.env
+docs/superpowers/
+.idea/

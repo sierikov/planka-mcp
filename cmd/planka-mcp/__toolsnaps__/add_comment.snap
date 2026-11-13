@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to comment on a Planka card, for example a summary of the work done on it. Returns the comment (id, author, date, text).",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "text": {
+        "description": "comment text (markdown)",
+        "type": "string"
+      }
+    },
+    "required": [
+      "card",
+      "text"
+    ],
+    "type": "object"
+  },
+  "name": "add_comment",
+  "title": "Add comment"
+}

@@ -1,0 +1,98 @@
+name: Go
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Test
+        run: go test -race ./...
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: golangci/golangci-lint-action@d583c34f0599d37dbac4a198b9c83201be380893 # v9.3.0
+        with:
+          version: v2.12.2   # the version `make lint` is checked with; keep both in step
+
+  vulncheck:
+    name: Known vulnerabilities
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod   # its toolchain line picks the patch release
+          cache: true
+
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@v1.9.0 ./...
+
+  e2e:
+    name: E2E (Planka ${{ matrix.planka }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        # The oldest supported 2.x that people run, and the newest.
+        planka: ["2.1.1", "2.2.1"]
+    env:
+      PLANKA_VERSION: ${{ matrix.planka }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/setup-go@40f1582b2485089dde7abd97c1529aa768e1baff # v5.6.0
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Start Planka
+        run: docker compose -f deploy/compose.yml up -d
+
+      - name: Wait for Planka
+        run: |
+          for _ in $(seq 1 60); do
+            if curl --max-time 5 -sf -o /dev/null http://localhost:3333/api/bootstrap; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "Planka did not become ready" >&2
+          exit 1
+
+      - name: End-to-end tests
+        # The e2e tests read only PLANKA_E2E_*, never the server's own PLANKA_URL / PLANKA_API_KEY.
+        # Without PLANKA_E2E_API_KEY they bootstrap an admin key with scripts/planka-bootstrap.sh.
+        env:
+          PLANKA_E2E_URL: http://localhost:3333
+        run: make e2e
+
+      - name: Planka logs
+        if: failure()
+        run: docker compose -f deploy/compose.yml logs

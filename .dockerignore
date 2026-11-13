@@ -1,0 +1,10 @@
+.git
+.superpowers
+.env
+deploy/
+scripts/
+!scripts/notices.sh
+docs
+/planka-mcp
+*.mcpb
+dist

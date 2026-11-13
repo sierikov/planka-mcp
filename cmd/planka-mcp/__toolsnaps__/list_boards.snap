@@ -1,0 +1,20 @@
+{
+  "annotations": {
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": true
+  },
+  "description": "Use this to find which Planka boards exist, or to look a board up by name. Returns every project you can see with its boards as {id, name}, optionally filtered by name.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "query": {
+        "description": "only boards whose name contains this text (case-insensitive)",
+        "type": "string"
+      }
+    },
+    "type": "object"
+  },
+  "name": "list_boards",
+  "title": "List boards"
+}
