@@ -26,7 +26,7 @@ What makes this server different from the other Planka MCP servers:
 - Boards, lists, labels and people are given **by name**, so you never have to look up an ID; they also accept IDs, and boards accept links. Cards can be given by ID, URL or by text ("the card about the backup script"). When a name or a text matches more than one thing (say, two lists called "Done"), the error lists the candidates with their IDs instead of guessing, and the assistant retries with the ID it means.
 - One call per intent and compact JSON output, so it is cheap in tokens and round trips.
 - **Per-user keys over HTTP:** a self-hosted instance serves several people, each with their own Planka API key.
-- A single Go binary, `.mcpb` bundles for Claude Desktop and a multi-arch Docker image.
+- A single Go binary, also on npm for `npx`, `.mcpb` bundles for Claude Desktop and a multi-arch Docker image.
 
 ## Tools
 
@@ -95,13 +95,13 @@ Pick the setup that fits. Stdio runs on your own machine with your own key or lo
 <details>
 <summary>Claude Code (stdio)</summary>
 
-Download the binary for your platform from the [latest release](https://github.com/sierikov/planka-mcp/releases/latest) (`planka-mcp-macos-arm64`, `planka-mcp-macos-amd64`, `planka-mcp-linux-amd64`, `planka-mcp-linux-arm64`, `planka-mcp-windows-amd64.exe`, `planka-mcp-windows-arm64.exe`), make it executable, then (on macOS a downloaded, unsigned binary may be quarantined: run `xattr -d com.apple.quarantine ./planka-mcp` if it will not start):
+With Node.js 18 or later, npx fetches the binary for your platform from npm (`@sierikov/planka-mcp`) and runs it:
 
 ```bash
 claude mcp add planka \
   -e PLANKA_URL=https://planka.example.com \
   -e PLANKA_API_KEY=your-api-key \
-  -- /path/to/planka-mcp
+  -- npx -y @sierikov/planka-mcp@latest
 ```
 
 Without a key, use your username and password instead:
@@ -111,8 +111,12 @@ claude mcp add planka \
   -e PLANKA_URL=https://planka.example.com \
   -e PLANKA_USERNAME=your-username \
   -e PLANKA_PASSWORD='your-password' \
-  -- /path/to/planka-mcp
+  -- npx -y @sierikov/planka-mcp@latest
 ```
+
+`@latest` picks up each new release when the client starts the server; `@0.2.0` pins one.
+
+Without Node.js, download the binary for your platform from the [latest release](https://github.com/sierikov/planka-mcp/releases/latest) (`planka-mcp-macos-arm64`, `planka-mcp-macos-amd64`, `planka-mcp-linux-amd64`, `planka-mcp-linux-arm64`, `planka-mcp-windows-amd64.exe`, `planka-mcp-windows-arm64.exe`), make it executable, and put its path where the commands above say `npx -y @sierikov/planka-mcp@latest`. On macOS a downloaded, unsigned binary may be quarantined: run `xattr -d com.apple.quarantine ./planka-mcp` if it will not start.
 
 Use the `https://` address. Over `http://` the password travels unencrypted with the first request, before any redirect could help, so the server warns at startup when it would send a password to an `http://` address on another machine. If `http://` redirects, the server reports the address to use instead of following it.
 
@@ -155,13 +159,14 @@ The `.mcpb` format is for Claude Desktop. Other clients use the stdio or HTTP se
 <details>
 <summary>Other clients (mcpServers JSON)</summary>
 
-Most MCP clients (Cursor, Windsurf, VS Code, Claude Desktop without the bundle and others) take an `mcpServers` JSON block. For stdio, point it at the binary and pass your URL and key in `env`:
+Most MCP clients (Cursor, Windsurf, VS Code, Claude Desktop without the bundle and others) take an `mcpServers` JSON block. For stdio, run the server with npx (or put the path to a downloaded binary in `command` and drop `args`) and pass your URL and key in `env`:
 
 ```json
 {
   "mcpServers": {
     "planka": {
-      "command": "/path/to/planka-mcp",
+      "command": "npx",
+      "args": ["-y", "@sierikov/planka-mcp@latest"],
       "env": {
         "PLANKA_URL": "https://planka.example.com",
         "PLANKA_API_KEY": "your-api-key"

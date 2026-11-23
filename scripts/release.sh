@@ -80,8 +80,8 @@ sha256() {
 }
 
 # write_server_json: dist/server.json is server.json with this version, each
-# bundle's download URL on the GitHub release and its SHA-256, and the Docker
-# image tagged with this version.
+# bundle's download URL on the GitHub release and its SHA-256, the Docker
+# image tagged with this version, and this version of the npm package.
 write_server_json() {
   local hashes='{}' bundle
   for bundle in dist/*.mcpb; do
@@ -97,6 +97,8 @@ write_server_json() {
           | .fileSha256 = ($hashes[$file] // error("server.json lists \($file), but it was not built"))
         elif .registryType == "oci" then
           .identifier |= sub(":[^:]*$"; ":\($version)")
+        elif .registryType == "npm" then
+          .version = $version
         else . end)
   ' server.json >dist/server.json
 }

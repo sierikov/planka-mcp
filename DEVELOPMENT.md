@@ -4,7 +4,7 @@ How to build, test and release planka-mcp. To install and use it, see the [READM
 
 ## Requirements
 
-Go 1.26 (go.mod pins the patch release with its `toolchain` line), [golangci-lint](https://golangci-lint.run) v2.12.2 (the version CI runs), `goimports` (for `make fmt`), `jq` and `zip` (for `make dist`), and Docker (for the image and the end-to-end tests).
+Go 1.26 (go.mod pins the patch release with its `toolchain` line), [golangci-lint](https://golangci-lint.run) v2.12.2 (the version CI runs), `goimports` (for `make fmt`), `jq` and `zip` (for `make dist`), Node.js with npm (for `make npm-test`), and Docker (for the image and the end-to-end tests).
 
 ## Layout
 
@@ -33,6 +33,8 @@ The layers are enforced with `depguard` in `.golangci.yml`: `internal/planka` an
 | `make fixtures` | Re-capture the recorded Planka responses (see below) |
 | `make mcpb` | Build `planka-mcp.mcpb` for the current platform |
 | `make dist` | Build every release file into `dist/`, as the release workflow does (`make dist VERSION=0.1.0`) |
+| `make npm` | Assemble the npm packages from `dist/` into `dist/npm/` (`make dist npm VERSION=0.1.0`) |
+| `make npm-test` | Build a test release, pack the npm packages, install them and run the server through `npx`: version, a clean stdout, exit codes, and the errors on a missing or unsupported platform |
 | `make docker` | Build the image as `planka-mcp:dev` |
 | `make clean` | Remove build outputs |
 
@@ -72,4 +74,26 @@ The service and tools tests use mockery v3 mocks, generated into the consuming p
 
 ## Releasing
 
-Push a tag such as `v0.1.0`. The release workflow runs the tests, builds the binaries and `.mcpb` bundles for macOS, Linux and Windows (amd64 and arm64) with `scripts/release.sh`, pushes the multi-arch image to `ghcr.io/sierikov/planka-mcp`, then creates the GitHub release (with `checksums.txt`, `LICENSE` and the third-party license notices, which every bundle carries too) and publishes `server.json` to the MCP Registry. Each step runs as its own job with only the permissions it needs, every action is pinned to a commit, the image is pushed only after the tests pass, and the `mcp-publisher` download is checked against its published SHA-256. The version comes from the tag alone: it goes into the binaries, the manifest inside each bundle, `server.json` and the image tag, while the committed `manifest.json` and `server.json` keep the placeholder `0.0.0-dev`. `make dist VERSION=0.1.0` builds the same files into `dist/` locally. Before anything is published, the build job checks `server.json` with the registry's own validator, so a file the registry would refuse stops the release. Publishing to the MCP Registry itself is best-effort (`continue-on-error`), so a failure there does not fail the release: check the run log. Only a failed `mcp-publisher` download or checksum turns that last job red, after the release is already out. After the **first** release, make the `ghcr.io/sierikov/planka-mcp` package public in GitHub's package settings, or others cannot pull the image and the registry cannot read it.
+Push a tag such as `v0.1.0`. The release workflow runs the tests, builds the binaries and `.mcpb` bundles for macOS, Linux and Windows (amd64 and arm64) with `scripts/release.sh`, pushes the multi-arch image to `ghcr.io/sierikov/planka-mcp`, then creates the GitHub release (with `checksums.txt`, `LICENSE` and the third-party license notices, which every bundle carries too) publishes the npm packages (see npm below) and publishes `server.json` to the MCP Registry. Each step runs as its own job with only the permissions it needs, every action is pinned to a commit, the image is pushed only after the tests pass, and the `mcp-publisher` download is checked against its published SHA-256. The version comes from the tag alone: it goes into the binaries, the manifest inside each bundle, `server.json` and the image tag, while the committed `manifest.json` and `server.json` keep the placeholder `0.0.0-dev`. `make dist VERSION=0.1.0` builds the same files into `dist/` locally. Before anything is published, the build job checks `server.json` with the registry's own validator, so a file the registry would refuse stops the release. Publishing to the MCP Registry itself is best-effort (`continue-on-error`), so a failure there does not fail the release: check the run log. Only a failed `mcp-publisher` download or checksum turns that last job red, after the release is already out. After the **first** release, make the `ghcr.io/sierikov/planka-mcp` package public in GitHub's package settings, or others cannot pull the image and the registry cannot read it.
+
+### npm
+
+The release also publishes the binaries to npm, so `npx -y @sierikov/planka-mcp` runs the server. The layout is esbuild's:
+- `@sierikov/planka-mcp` holds `npm/cli.js`, a small launcher that starts the binary and passes stdin, stdout, the exit code and signals through.
+- `@sierikov/planka-mcp-<os>-<cpu>` holds the binary for one platform. There are six such packages, which the main package lists as `optionalDependencies`, so npm installs only the one for the machine.
+
+The workflow's `npm` job assembles the packages from the release's own binaries (`scripts/npm-packages.sh`), then publishes them with `scripts/npm-publish.sh`: platform packages first, the main package last. A pre-release goes to the `next` dist-tag. A package already on npm at that version is skipped, so "Re-run failed jobs" carries on after a partial publish. The job signs in through npm **trusted publishing** (OIDC, no token), which also adds provenance. The registry job runs after it, because the MCP Registry checks that the npm package's `mcpName` names this server.
+
+**Setting up npm (once, by the owner).** Trusted publishing is configured per package on npmjs.com, a package must exist before it can be configured, and a new trusted publisher expires if no publish uses it within 2 days. So:
+1. **First publish, by hand, before pushing the first tag that ships to npm.** Run:
+   - `make dist npm VERSION=0.2.0`
+   - `npm login`
+   - `scripts/npm-publish.sh 0.2.0 latest`
+
+   Run these from a clean checkout of the commit you will tag. Go builds are reproducible, so these binaries then match the ones the release workflow builds. When the tag is pushed, the `npm` job finds the version already on npm and skips it.
+2. **Right before the next release**, on npmjs.com, open each of the seven packages and go to Settings → Trusted publishing → GitHub Actions. Enter:
+   - organization or user `sierikov`;
+   - repository `planka-mcp`;
+   - workflow filename `release.yml`.
+3. Push that release's tag within 2 days.
+

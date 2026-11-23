@@ -7,10 +7,12 @@ name: Release
 #             (amd64 and arm64 each), and server.json for the MCP Registry
 #   image     pushes the multi-arch Docker image to ghcr.io
 #   release   creates the GitHub release with the binaries and bundles
+#   npm       publishes the same binaries to npm, for npx (scripts/npm-packages.sh):
+#             @sierikov/planka-mcp and one package per platform
 #   registry  publishes server.json to the MCP Registry
 #
-# The tag is the only place the version lives: the binaries, bundles, server.json
-# and the image all get it from here. `make dist VERSION=0.1.0` builds the same
+# The tag is the only place the version lives: the binaries, bundles, server.json,
+# the image and the npm packages all get it from here. `make dist VERSION=0.1.0` builds the same
 # files locally.
 #
 # Each job gets only the permissions it needs, so third-party actions never run with
@@ -156,9 +158,43 @@ jobs:
             dist/THIRD_PARTY_NOTICES
             dist/checksums.txt
 
+  npm:
+    name: Publish to npm
+    needs: [tag, release]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # npm trusted publishing (OIDC), which also adds provenance
+    env:
+      VERSION: ${{ needs.tag.outputs.version }}
+      # npm refuses the latest tag for a pre-release version.
+      NPM_TAG: ${{ needs.tag.outputs.prerelease == 'true' && 'next' || 'latest' }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist
+
+      # Trusted publishing needs npm 11.5.1 or later and Node 22.14 or later.
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 24
+
+      - name: Update npm
+        run: npm install -g 'npm@^11.5.1'
+
+      - name: Assemble the packages
+        run: scripts/npm-packages.sh "$VERSION"
+
+      # A package already on npm at this version is skipped, so a re-run carries on.
+      - name: Publish the packages
+        run: scripts/npm-publish.sh "$VERSION" "$NPM_TAG"
+
   registry:
     name: Publish to the MCP Registry
-    needs: release
+    needs: [release, npm]   # the registry checks that the npm package names this server
     runs-on: ubuntu-latest
     permissions:
       contents: read

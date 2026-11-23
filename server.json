@@ -59,6 +59,40 @@
       }
     },
     {
+      "registryType": "npm",
+      "identifier": "@sierikov/planka-mcp",
+      "version": "0.0.0-dev",
+      "runtimeHint": "npx",
+      "transport": {
+        "type": "stdio"
+      },
+      "environmentVariables": [
+        {
+          "name": "PLANKA_URL",
+          "description": "Base URL of your Planka v2 instance, e.g. https://planka.example.com",
+          "placeholder": "https://planka.example.com",
+          "isRequired": true
+        },
+        {
+          "name": "PLANKA_API_KEY",
+          "description": "Your personal Planka API key, created for your user by a Planka admin. Leave it out to log in with PLANKA_USERNAME and PLANKA_PASSWORD instead.",
+          "isRequired": false,
+          "isSecret": true
+        },
+        {
+          "name": "PLANKA_USERNAME",
+          "description": "For users without an API key: your Planka username or email, used with PLANKA_PASSWORD",
+          "isRequired": false
+        },
+        {
+          "name": "PLANKA_PASSWORD",
+          "description": "Your Planka password, used with PLANKA_USERNAME. Not for single sign-on or two-factor accounts: those need an API key.",
+          "isRequired": false,
+          "isSecret": true
+        }
+      ]
+    },
+    {
       "registryType": "oci",
       "identifier": "ghcr.io/sierikov/planka-mcp:0.0.0-dev",
       "runtimeHint": "docker",

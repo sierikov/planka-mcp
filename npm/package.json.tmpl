@@ -1,0 +1,33 @@
+{
+  "common": {
+    "license": "MIT",
+    "homepage": "https://github.com/sierikov/planka-mcp",
+    "repository": {
+      "type": "git",
+      "url": "git+https://github.com/sierikov/planka-mcp.git"
+    },
+    "publishConfig": {
+      "access": "public"
+    }
+  },
+  "main": {
+    "name": "@sierikov/planka-mcp",
+    "description": "MCP server for Planka kanban boards (unofficial)",
+    "mcpName": "io.github.sierikov/planka-mcp",
+    "keywords": ["mcp", "model-context-protocol", "planka", "kanban"],
+    "bin": {
+      "planka-mcp": "cli.js"
+    },
+    "files": [
+      "cli.js",
+      "LICENSE",
+      "README.md"
+    ],
+    "engines": {
+      "node": ">=18"
+    }
+  },
+  "platform": {
+    "description": "Prebuilt planka-mcp binary for one platform. Install @sierikov/planka-mcp instead."
+  }
+}

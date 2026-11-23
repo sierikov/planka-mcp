@@ -11,7 +11,7 @@ PLANKA_PORT     ?= 3333
 COMPOSE_PROJECT ?= planka-mcp-dev
 COMPOSE   := PLANKA_VERSION=$(PLANKA_VERSION) PLANKA_PORT=$(PLANKA_PORT) docker compose -p $(COMPOSE_PROJECT) -f deploy/compose.yml
 
-.PHONY: all build test lint fmt vet check clean mcpb dist mocks toolsnaps e2e docker planka-up planka-down fixtures
+.PHONY: all build test lint fmt vet check clean mcpb dist npm npm-test mocks toolsnaps e2e docker planka-up planka-down fixtures
 
 all: check build
 
@@ -26,6 +26,14 @@ mcpb: build
 # Builds every release file into dist/, as the release workflow does: make dist VERSION=0.1.0
 dist:
 	./scripts/release.sh $(VERSION)
+
+# Assembles the npm packages from dist/ into dist/npm/: make dist npm VERSION=0.1.0
+npm:
+	./scripts/npm-packages.sh $(VERSION)
+
+# Builds a test release, packs the npm packages and runs the server through npx.
+npm-test:
+	./scripts/npm-test.sh
 
 docker:
 	docker build --build-arg VERSION=$(VERSION) -t planka-mcp:dev .
