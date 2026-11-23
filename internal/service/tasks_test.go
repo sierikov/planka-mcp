@@ -89,6 +89,8 @@ func TestAddTasksNewNamedListGoesAtTheBottom(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, "Release", got.Name)
+	assert.True(t, got.Created, "the call made the checklist")
+	assert.Equal(t, []string{"Tasks", "Other"}, got.Others, "the card's checklists before the call")
 }
 
 func TestAddTasksReusesExistingListCaseInsensitive(t *testing.T) {
@@ -108,6 +110,7 @@ func TestAddTasksReusesExistingListCaseInsensitive(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "tl2", got.ID)
 	assert.Equal(t, []string{"Build", "Sign", "Publish", "Announce"}, names(got.Tasks))
+	assert.False(t, got.Created, "the checklist was already there")
 	assert.True(t, got.Tasks[0].Completed)
 }
 

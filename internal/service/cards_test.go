@@ -922,3 +922,38 @@ func TestOverlayDoesNotDuplicateUsers(t *testing.T) {
 	require.NoError(t, err)
 	assert.Equal(t, "admin", u.Username)
 }
+
+// TestAmbiguousCardSaysHowManyWereLeftOut: an ambiguous title lists ten
+// candidates and says how many more matched, so the model does not conclude
+// the card it wants is missing.
+func TestAmbiguousCardSaysHowManyWereLeftOut(t *testing.T) {
+	specs := make([]spec, 0, 13)
+	for i := range 13 {
+		specs = append(specs, spec{id: fmt.Sprintf("t%d", i), title: fmt.Sprintf("Task %d", i), list: "todo", pos: float64(i)})
+	}
+	f := newCardsFixture(t)
+	f.serve(synthBoard("b1", "pw", "B1", specs...))
+
+	_, _, err := f.svc.resolveID(t.Context(), CardRef{Ref: "task", Board: "B1"})
+
+	var amb *AmbiguousError
+	require.ErrorAs(t, err, &amb)
+	assert.Len(t, amb.Candidates, 10)
+	assert.Equal(t, 3, amb.More)
+	assert.Contains(t, amb.Error(), "; and 3 more not shown (narrow with board or more words); retry with the id")
+}
+
+// TestGetCardWithoutComments: a comments limit of 0 skips the comments and
+// their read (no Comments mock is set up); the card still counts them.
+func TestGetCardWithoutComments(t *testing.T) {
+	f := newCardsFixture(t)
+	f.projects.EXPECT().Projects(mock.Anything).Return(fixtureProjects(t), nil).Maybe()
+	f.cards.EXPECT().Card(mock.Anything, fixtureReadmeID).Return(fixtureCard(t), nil).Once()
+	f.boards.EXPECT().Board(mock.Anything, fixtureBoardID).Return(fixtureBoard(t), nil).Once()
+
+	got, err := f.svc.Get(t.Context(), CardRef{Ref: fixtureReadmeID}, 0)
+
+	require.NoError(t, err)
+	assert.Empty(t, got.Comments)
+	assert.Equal(t, "Write README", got.Title)
+}

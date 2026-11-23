@@ -2,6 +2,7 @@ package tools
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 
@@ -53,7 +54,7 @@ type getCardInput struct {
 	Card            string `json:"card" jsonschema:"card ID, card URL, or title (or part of it)"`
 	Board           string `json:"board,omitempty" jsonschema:"board to look on when card is a title (ID, URL or name)"`
 	IncludeArchived bool   `json:"include_archived,omitempty" jsonschema:"let a title match archived cards (default false)"`
-	CommentsLimit   int    `json:"comments_limit,omitempty" jsonschema:"how many of the latest comments to include (default 10)"`
+	CommentsLimit   *int   `json:"comments_limit,omitempty" jsonschema:"how many of the latest comments to include (default 10); 0 leaves them out, the count still shows"`
 }
 
 type listCommentsInput struct {
@@ -81,7 +82,8 @@ func registerReadTools(server *mcp.Server, deps Deps) {
 		Description: "Use this to see a Planka board as a kanban: what is in each list, or what is left in one list. " +
 			"Returns the board's lists in order with compact card lines (id, title, labels, assignees, due, tasks done/total), " +
 			"plus the board's label and member names; descriptions are not included. " +
-			"Each list shows its first 10 cards (3 for a closed list) and how many more it has.",
+			"Each list shows its first 10 cards (3 for a closed list) and how many more it has. " +
+			"To see one list's cards pass list; to find cards across boards, use search_cards instead.",
 		Annotations: readOnly,
 	}, getBoard(deps.Catalog))
 
@@ -175,9 +177,11 @@ func searchCards(cards CardService) func(context.Context, *mcp.CallToolRequest, 
 
 func getCard(cards CardService) func(context.Context, *mcp.CallToolRequest, getCardInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in getCardInput) (*mcp.CallToolResult, any, error) {
-		limit := in.CommentsLimit
-		if limit <= 0 {
-			limit = defaultCommentsLimit
+		limit := defaultCommentsLimit
+		if in.CommentsLimit != nil {
+			if limit = *in.CommentsLimit; limit < 0 {
+				return errorResult(errors.New("comments_limit cannot be negative: use 0 to leave the comments out"))
+			}
 		}
 		card, err := cards.Get(ctx, service.CardRef{Ref: in.Card, Board: in.Board, IncludeArchived: in.IncludeArchived}, limit)
 		if err != nil {

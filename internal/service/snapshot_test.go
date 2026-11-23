@@ -52,6 +52,29 @@ func TestSnapshotKanbanLists(t *testing.T) {
 	assert.Equal(t, []string{"Open", "In progress", "Ready for release", "Done", "Dropped"}, names)
 }
 
+// TestSnapshotKanbanListsFollowPositionOnly: Planka's UI orders columns by
+// position (ties by ID length, then ID), whatever their type, so a closed
+// column between two active ones stays there.
+func TestSnapshotKanbanListsFollowPositionOnly(t *testing.T) {
+	b := synthBoard("b1", "pw", "B1")
+	b.Included.Lists = []planka.List{
+		{ID: "30", BoardID: "b1", Type: "active", Name: new("Doing"), Position: new(3.0)},
+		{ID: "20", BoardID: "b1", Type: "closed", Name: new("Review done"), Position: new(2.0)},
+		{ID: "10", BoardID: "b1", Type: "active", Name: new("Todo"), Position: new(1.0)},
+		{ID: "100", BoardID: "b1", Type: "active", Name: new("Tie, longer ID"), Position: new(4.0)},
+		{ID: "99", BoardID: "b1", Type: "active", Name: new("Tie, shorter ID"), Position: new(4.0)},
+		{ID: "40", BoardID: "b1", Type: "archive"},
+	}
+	snap := newSnapshot(b, "Work")
+
+	lists := snap.kanbanLists()
+	names := make([]string, 0, len(lists))
+	for _, l := range lists {
+		names = append(names, *l.Name)
+	}
+	assert.Equal(t, []string{"Todo", "Review done", "Doing", "Tie, shorter ID", "Tie, longer ID"}, names)
+}
+
 func TestSnapshotListByNameArchive(t *testing.T) {
 	snap := fixtureSnapshot(t)
 
@@ -134,7 +157,8 @@ func TestSnapshotAmbiguousNamesCarryIDs(t *testing.T) {
 		err  error
 		want []Candidate
 	}{
-		{"list", second(snap.kanbanListByName("done")), []Candidate{{ID: "1887856285144056844", Label: "Done"}, {ID: "901", Label: "Done"}}},
+		// The added "Done" sits at position 1, first on the board, so it is listed first.
+		{"list", second(snap.kanbanListByName("done")), []Candidate{{ID: "901", Label: "Done"}, {ID: "1887856285144056844", Label: "Done"}}},
 		{"label", second(snap.labelByName("feature")), []Candidate{{ID: "1887856285387326478", Label: "feature"}, {ID: "902", Label: "feature"}}},
 		{"user", second(snap.userByName("sam", "x")), []Candidate{{ID: "903", Label: "Sam"}, {ID: "904", Label: "Sam"}}},
 	} {

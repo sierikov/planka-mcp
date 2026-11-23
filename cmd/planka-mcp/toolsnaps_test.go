@@ -25,6 +25,7 @@ func connectSession(t *testing.T, server *mcp.Server) *mcp.ClientSession {
 }
 
 func TestToolSnapshots(t *testing.T) {
+	t.Setenv("TZ", "Europe/Berlin") // the due parameters name the zone; pin it so snapshots match on every machine
 	session := connectSession(t, newTestServer(t, nil))
 	res, err := session.ListTools(t.Context(), nil)
 	require.NoError(t, err)

@@ -57,7 +57,7 @@ func TestMatchNameCandidatesCarryIDs(t *testing.T) {
 	var amb *AmbiguousError
 	require.ErrorAs(t, err, &amb)
 	assert.Equal(t, []Candidate{{ID: "1", Label: "Done"}, {ID: "3", Label: "done"}}, amb.Candidates)
-	assert.Equal(t, `"done" matches several lists: Done (id 1), done (id 3)`, amb.Error())
+	assert.Equal(t, `"done" matches several lists: Done (id 1); done (id 3); retry with the id of the one you mean`, amb.Error())
 }
 
 func TestErrorStrings(t *testing.T) {
@@ -72,14 +72,16 @@ func TestErrorStrings(t *testing.T) {
 	amb := &AmbiguousError{Kind: "board", Query: "Inbox", Candidates: []Candidate{
 		{ID: "1", Label: "Personal / Inbox"}, {ID: "2", Label: "Work / Inbox"},
 	}}
-	assert.Equal(t, `"Inbox" matches several boards: Personal / Inbox (id 1), Work / Inbox (id 2)`, amb.Error())
+	assert.Equal(t, `"Inbox" matches several boards: Personal / Inbox (id 1); Work / Inbox (id 2); retry with the id of the one you mean`, amb.Error())
 
-	assert.Equal(t, `"Done" matches several lists: Done, DONE`,
+	assert.Equal(t, `"Done" matches several lists: Done; DONE; retry with one of them`,
 		(&AmbiguousError{Kind: "list", Query: "Done", Candidates: []Candidate{{Label: "Done"}, {Label: "DONE"}}}).Error())
 
-	assert.Equal(t, `no card matching "x" on board "B"; archived cards were not searched, set include_archived to search the archive`,
+	assert.Equal(t, `no card matching "x" on board "B"; every word must be in the title or in the description: try fewer or other words; `+
+		`archived cards were not searched: find one with search_cards include_archived=true, then use its id`,
 		(&NoMatchError{Kind: "card", Query: "x", Scope: `board "B"`, ArchiveHint: true}).Error())
-	assert.Equal(t, `no card matching "x"`, (&NoMatchError{Kind: "card", Query: "x"}).Error())
+	assert.Equal(t, `no card matching "x"; every word must be in the title or in the description: try fewer or other words`,
+		(&NoMatchError{Kind: "card", Query: "x"}).Error())
 }
 
 func TestParseRef(t *testing.T) {

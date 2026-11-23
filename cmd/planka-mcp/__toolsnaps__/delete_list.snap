@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this only when a Planka list (a column) must go. Planka moves every card in it to the board's Trash, where they can be restored in Planka's web UI; to keep them on the board, move them first with move_card, or archive them with update_list archive_cards. Returns the deleted list's id and name and how many cards went to Trash.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board the list is on (ID, URL or name)",
+        "type": "string"
+      },
+      "list": {
+        "description": "the list to delete, by exact name or ID",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "list"
+    ],
+    "type": "object"
+  },
+  "name": "delete_list",
+  "title": "Delete list"
+}

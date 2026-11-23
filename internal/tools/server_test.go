@@ -33,6 +33,18 @@ func TestInstructionsNameTheTimeZone(t *testing.T) {
 	assert.Contains(t, session.InitializeResult().Instructions, "in the server's time zone, "+zone+".")
 }
 
+// TestDueTextNamesTheZone: the due parameters name the zone themselves, for
+// clients that never pass the server's instructions on to the model.
+func TestDueTextNamesTheZone(t *testing.T) {
+	props := inputProps(t, connect(t, Deps{}))
+
+	zone := zoneText(time.Now(), os.Getenv, os.Readlink)
+	for _, tool := range []string{"create_card", "update_card"} {
+		require.Contains(t, props[tool], "due", tool)
+		assert.Contains(t, props[tool]["due"]["description"], "without an offset is in "+zone+", the server's time zone", tool)
+	}
+}
+
 func TestZoneText(t *testing.T) {
 	cest := time.Date(2026, 10, 20, 12, 0, 0, 0, time.FixedZone("CEST", 2*60*60))
 	noLink := func(string) (string, error) { return "", errors.New("no link") }
@@ -52,9 +64,9 @@ func TestZoneText(t *testing.T) {
 		readlink func(string) (string, error)
 		want     string
 	}{
-		{"TZ names the zone", cest, "Europe/Berlin", noLink, "Europe/Berlin (currently UTC+02:00)"},
-		{"TZ with a leading colon", cest, ":Europe/Berlin", noLink, "Europe/Berlin (currently UTC+02:00)"},
-		{"TZ as a zoneinfo path", cest, "/usr/share/zoneinfo/Europe/Berlin", noLink, "Europe/Berlin (currently UTC+02:00)"},
+		{"TZ names the zone", cest, "Europe/Berlin", noLink, "Europe/Berlin"},
+		{"TZ with a leading colon", cest, ":Europe/Berlin", noLink, "Europe/Berlin"},
+		{"TZ as a zoneinfo path", cest, "/usr/share/zoneinfo/Europe/Berlin", noLink, "Europe/Berlin"},
 		{
 			"the /etc/localtime link names the zone", cest, "",
 			func(path string) (string, error) {
@@ -63,12 +75,9 @@ func TestZoneText(t *testing.T) {
 				}
 				return "/var/db/timezone/zoneinfo/Europe/Berlin", nil
 			},
-			"Europe/Berlin (currently UTC+02:00)",
+			"Europe/Berlin",
 		},
-		{"no name falls back to the abbreviation", cest, "", noLink, "CEST (currently UTC+02:00)"},
-		{"UTC is just UTC", time.Date(2026, 10, 20, 12, 0, 0, 0, time.UTC), "", noLink, "UTC"},
-		{"a negative half-hour offset", time.Date(2026, 1, 1, 0, 0, 0, 0, time.FixedZone("NST", -(3*60+30)*60)), "America/St_Johns", noLink,
-			"America/St_Johns (currently UTC-03:30)"},
+		{"no name falls back to the abbreviation", cest, "", noLink, "CEST"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {

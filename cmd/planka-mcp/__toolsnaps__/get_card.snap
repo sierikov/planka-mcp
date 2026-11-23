@@ -17,8 +17,11 @@
         "type": "string"
       },
       "comments_limit": {
-        "description": "how many of the latest comments to include (default 10)",
-        "type": "integer"
+        "description": "how many of the latest comments to include (default 10); 0 leaves them out, the count still shows",
+        "type": [
+          "null",
+          "integer"
+        ]
       },
       "include_archived": {
         "description": "let a title match archived cards (default false)",

@@ -184,9 +184,27 @@ type (
 	}
 	boardDetail struct {
 		Lists []struct {
-			Name  string     `json:"name"`
-			Cards []cardLine `json:"cards"`
+			Name   string     `json:"name"`
+			Color  string     `json:"color"`
+			Closed bool       `json:"closed"`
+			Cards  []cardLine `json:"cards"`
 		} `json:"lists"`
+	}
+	listResult struct {
+		List struct {
+			ID     string `json:"id"`
+			Name   string `json:"name"`
+			Color  string `json:"color"`
+			Closed bool   `json:"closed"`
+			Cards  int    `json:"cards_total"`
+		} `json:"list"`
+		Lists    []string `json:"list_order"`
+		Archived int      `json:"archived"`
+	}
+	deletedList struct {
+		Deleted      string `json:"deleted"`
+		Name         string `json:"name"`
+		CardsToTrash int    `json:"cards_moved_to_trash"`
 	}
 	projectBoards struct {
 		Project string `json:"project"`

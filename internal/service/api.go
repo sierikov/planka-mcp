@@ -61,6 +61,15 @@ type CommentsWriteAPI interface {
 	DeleteComment(ctx context.Context, id string) error
 }
 
+// ListsAPI creates, changes, sorts, empties and deletes a board's lists.
+type ListsAPI interface {
+	CreateList(ctx context.Context, boardID string, r planka.CreateListRequest) (*planka.List, error)
+	UpdateList(ctx context.Context, id string, r planka.UpdateListRequest) (*planka.List, error)
+	DeleteList(ctx context.Context, id string) ([]planka.Card, error)
+	SortList(ctx context.Context, id, field, order string) error
+	MoveListCards(ctx context.Context, id, toListID string) ([]planka.Card, error)
+}
+
 // TasksAPI creates task lists, and creates, changes and deletes tasks.
 type TasksAPI interface {
 	CreateTaskList(ctx context.Context, cardID, name string, position float64) (*planka.TaskList, error)

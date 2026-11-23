@@ -106,7 +106,7 @@ func TestGetBoardByAmbiguousName(t *testing.T) {
 		{ID: "1", Label: "Personal / Inbox"},
 		{ID: "2", Label: "Work / Inbox"},
 	}, amb.Candidates)
-	assert.Equal(t, `"Inbox" matches several boards: Personal / Inbox (id 1), Work / Inbox (id 2)`, err.Error())
+	assert.Equal(t, `"Inbox" matches several boards: Personal / Inbox (id 1); Work / Inbox (id 2); retry with the id of the one you mean`, err.Error())
 }
 
 func TestResolveBoard(t *testing.T) {

@@ -40,10 +40,18 @@ type TaskService interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ListService adds, changes and deletes the lists (columns) of a board.
+type ListService interface {
+	Create(ctx context.Context, in service.CreateList) (*service.ListResult, error)
+	Update(ctx context.Context, in service.UpdateList) (*service.ListResult, error)
+	Delete(ctx context.Context, board, list string) (*service.DeletedList, error)
+}
+
 // Deps are the services the tools call. Every service is required.
 type Deps struct {
 	Catalog  CatalogService
 	Cards    CardService
 	Comments CommentService
 	Tasks    TaskService
+	Lists    ListService
 }

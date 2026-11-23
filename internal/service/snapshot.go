@@ -75,8 +75,9 @@ func (s *boardSnapshot) scope() string {
 	return fmt.Sprintf("board %q", s.resp.Item.Name)
 }
 
-// kanbanLists returns the lists that show as columns: the active ones, then
-// the closed ones, each by position. Archive and trash are left out.
+// kanbanLists returns the lists that show as columns, active and closed, in
+// the order Planka's UI shows them: by position, then by ID length and ID.
+// Archive and trash are left out.
 func (s *boardSnapshot) kanbanLists() []planka.List {
 	var out []planka.List
 	for _, l := range s.resp.Included.Lists {
@@ -85,19 +86,9 @@ func (s *boardSnapshot) kanbanLists() []planka.List {
 		}
 	}
 	slices.SortStableFunc(out, func(a, b planka.List) int {
-		if c := cmp.Compare(listRank(a), listRank(b)); c != 0 {
-			return c
-		}
-		return comparePosition(a.Position, b.Position)
+		return cmp.Or(comparePosition(a.Position, b.Position), cmp.Compare(len(a.ID), len(b.ID)), cmp.Compare(a.ID, b.ID))
 	})
 	return out
-}
-
-func listRank(l planka.List) int {
-	if l.Type == "closed" {
-		return 1
-	}
-	return 0
 }
 
 // comparePosition orders positions ascending, a missing one last.
@@ -287,7 +278,7 @@ func (s *boardSnapshot) boardOf(lists []planka.List) *Board {
 		Lists:   make([]List, len(lists)),
 	}
 	for i, l := range lists {
-		b.Lists[i] = List{ID: l.ID, Name: listLabel(l), Closed: l.Type == "closed", Cards: s.cardsIn(l.ID)}
+		b.Lists[i] = List{ID: l.ID, Name: listLabel(l), Color: deref(l.Color), Closed: l.Type == "closed", Cards: s.cardsIn(l.ID)}
 	}
 	for _, l := range s.sortedLabels() {
 		b.Labels = append(b.Labels, labelName(l))

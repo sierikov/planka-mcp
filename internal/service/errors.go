@@ -16,20 +16,30 @@ type Candidate struct {
 }
 
 // AmbiguousError reports a name that matches several records equally well.
+// More counts the matches left out of Candidates.
 type AmbiguousError struct {
 	Kind, Query string
 	Candidates  []Candidate
+	More        int
 }
 
+// Error lists the candidates and says how to retry. When each has an ID, the
+// retry goes by ID: the name alone is what was ambiguous.
 func (e *AmbiguousError) Error() string {
 	parts := make([]string, len(e.Candidates))
+	retry := "retry with the id of the one you mean"
 	for i, c := range e.Candidates {
 		parts[i] = c.Label
 		if c.ID != "" {
 			parts[i] += " (id " + c.ID + ")"
+		} else {
+			retry = "retry with one of them"
 		}
 	}
-	return fmt.Sprintf("%q matches several %ss: %s", e.Query, e.Kind, strings.Join(parts, ", "))
+	if e.More > 0 {
+		parts = append(parts, fmt.Sprintf("and %d more not shown (narrow with board or more words)", e.More))
+	}
+	return fmt.Sprintf("%q matches several %ss: %s; %s", e.Query, e.Kind, strings.Join(parts, "; "), retry)
 }
 
 // DescriptionMatchError reports a write whose card reference matched one card,
@@ -71,8 +81,10 @@ func (e *UnknownNameError) Error() string {
 	return b.String()
 }
 
-// NoMatchError reports a search that found nothing. ArchiveHint says the
-// archive was not searched and could be.
+// NoMatchError reports a card search that found nothing. ArchiveHint says the
+// archive was not searched and could be. Its text names only search_cards'
+// include_archived, because most tools that look a card up do not take it: a
+// retry with it there would be refused.
 type NoMatchError struct {
 	Kind, Query, Scope string
 	ArchiveHint        bool
@@ -84,8 +96,17 @@ func (e *NoMatchError) Error() string {
 	if e.Scope != "" {
 		b.WriteString(" on " + e.Scope)
 	}
+	b.WriteString("; every word must be in the title or in the description: try fewer or other words")
 	if e.ArchiveHint {
-		b.WriteString("; archived cards were not searched, set include_archived to search the archive")
+		b.WriteString("; archived cards were not searched: find one with search_cards include_archived=true, then use its id")
 	}
 	return b.String()
+}
+
+// orList joins values as "a, b or c", for the error that lists them.
+func orList(values []string) string {
+	if len(values) < 2 {
+		return strings.Join(values, "")
+	}
+	return strings.Join(values[:len(values)-1], ", ") + " or " + values[len(values)-1]
 }

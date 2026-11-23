@@ -8,7 +8,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"unicode/utf8"
 
 	"golang.org/x/sync/errgroup"
 
@@ -74,7 +73,7 @@ func (c *Cards) search(ctx context.Context, q SearchQuery) ([]hit, int, error) {
 		q.Limit = defaultSearchLimit
 	}
 	if q.IncludeArchived {
-		if n := utf8.RuneCountInString(archiveText(q.Text)); n > maxArchiveSearch {
+		if n := jsLen(archiveText(q.Text)); n > maxArchiveSearch {
 			return nil, 0, fmt.Errorf("search text is %d characters, but searching the archive allows at most %d", n, maxArchiveSearch)
 		}
 	}

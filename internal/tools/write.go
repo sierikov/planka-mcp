@@ -12,8 +12,9 @@ var (
 )
 
 // registerWriteTools adds the tools that change Planka.
-func registerWriteTools(server *mcp.Server, deps Deps) {
-	registerCardWriteTools(server, deps.Cards)
+func registerWriteTools(server *mcp.Server, deps Deps, zone string) {
+	registerCardWriteTools(server, deps.Cards, zone)
+	registerListWriteTools(server, deps.Lists)
 	registerChecklistWriteTools(server, deps.Comments, deps.Tasks)
 }
 

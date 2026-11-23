@@ -39,6 +39,7 @@ type List struct {
 	Type     string   `json:"type"`
 	Name     *string  `json:"name"`
 	Position *float64 `json:"position"`
+	Color    *string  `json:"color"`
 }
 
 // Card is a card on a board. Position is null for cards in the archive list.

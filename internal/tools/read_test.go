@@ -42,6 +42,24 @@ func call(t *testing.T, session *mcp.ClientSession, name string, args map[string
 	return res
 }
 
+// inputProps is each tool's input properties by name, decoded from its schema.
+func inputProps(t *testing.T, session *mcp.ClientSession) map[string]map[string]map[string]any {
+	t.Helper()
+	res, err := session.ListTools(t.Context(), nil)
+	require.NoError(t, err)
+	out := map[string]map[string]map[string]any{}
+	for _, tool := range res.Tools {
+		raw, err := json.Marshal(tool.InputSchema)
+		require.NoError(t, err)
+		var schema struct {
+			Properties map[string]map[string]any `json:"properties"`
+		}
+		require.NoError(t, json.Unmarshal(raw, &schema))
+		out[tool.Name] = schema.Properties
+	}
+	return out
+}
+
 func TestReadToolsAreReadOnly(t *testing.T) {
 	session := connect(t, Deps{})
 	res, err := session.ListTools(t.Context(), nil)
@@ -93,6 +111,10 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"add_tasks":      {"card", "items"},
 		"update_tasks":   {"items"},
 		"delete_task":    {"task_id"},
+
+		"create_list": {"board", "name"},
+		"update_list": {"board", "list"},
+		"delete_list": {"board", "list"},
 	}
 	for _, tool := range res.Tools {
 		assert.NotEmpty(t, tool.Description, tool.Name)
@@ -496,4 +518,24 @@ func TestToolPanicBecomesErrorResult(t *testing.T) {
 	assert.Contains(t, logged, "goroutine", "the stack is logged")
 	assert.NotContains(t, logged, "panic-secret-text")
 	assert.NotContains(t, logged, "boom-secret-query")
+}
+
+// TestGetCardCommentsLimitZeroLeavesThemOut: 0 means no comments, which is not
+// the default; a negative limit is refused before the service is called.
+func TestGetCardCommentsLimitZeroLeavesThemOut(t *testing.T) {
+	cards := NewMockCardService(t)
+	cards.EXPECT().Get(mock.Anything, mock.Anything, 0).
+		Return(&service.Card{CardSummary: service.CardSummary{ID: "c1", Title: "T", CommentsTotal: 7}}, nil).Once()
+	session := connect(t, Deps{Cards: cards})
+
+	var out cardOut
+	res := call(t, session, "get_card", map[string]any{"card": "c1", "comments_limit": 0})
+	require.NoError(t, json.Unmarshal([]byte(resultText(t, res)), &out))
+	assert.Empty(t, out.Comments)
+	assert.Equal(t, 7, out.CommentsTotal, "the count still shows")
+	assert.Empty(t, out.Hint)
+
+	res = call(t, session, "get_card", map[string]any{"card": "c1", "comments_limit": -1})
+	assert.True(t, res.IsError)
+	assert.Equal(t, "comments_limit cannot be negative: use 0 to leave the comments out", resultText(t, res))
 }

@@ -4,7 +4,7 @@
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "Use this to see a Planka board as a kanban: what is in each list, or what is left in one list. Returns the board's lists in order with compact card lines (id, title, labels, assignees, due, tasks done/total), plus the board's label and member names; descriptions are not included. Each list shows its first 10 cards (3 for a closed list) and how many more it has.",
+  "description": "Use this to see a Planka board as a kanban: what is in each list, or what is left in one list. Returns the board's lists in order with compact card lines (id, title, labels, assignees, due, tasks done/total), plus the board's label and member names; descriptions are not included. Each list shows its first 10 cards (3 for a closed list) and how many more it has. To see one list's cards pass list; to find cards across boards, use search_cards instead.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {

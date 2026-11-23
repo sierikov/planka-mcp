@@ -54,6 +54,7 @@ type boardOut struct {
 // listOut is a list with its first cards. More counts the cards left out.
 type listOut struct {
 	Name   string     `json:"name"`
+	Color  string     `json:"color,omitempty"`
 	Closed bool       `json:"closed,omitempty"`
 	Cards  []cardLine `json:"cards,omitempty"`
 	More   int        `json:"more,omitzero"`
@@ -187,7 +188,7 @@ func toBoardOut(b *service.Board, perList func(service.List) int) boardOut {
 		for j := range cards {
 			cards[j].Board, cards[j].List = "", ""
 		}
-		lists[i] = listOut{Name: l.Name, Closed: l.Closed, Cards: cards, More: len(l.Cards) - n}
+		lists[i] = listOut{Name: l.Name, Color: l.Color, Closed: l.Closed, Cards: cards, More: len(l.Cards) - n}
 	}
 	return boardOut{ID: b.ID, Name: b.Name, Project: b.Project, Labels: b.Labels, Members: b.Members, Lists: lists}
 }
@@ -307,21 +308,16 @@ type statusCoder interface {
 
 // errorText renders err for the model. A typed error found inside err gets its
 // hint-rich text; the context err wraps it in (such as "card 5 was created,
-// but: ") is kept, because it says what a failed write had already done.
+// but: ") is kept, because it says what a failed write had already done. The
+// service's ambiguity and no-match errors already read that way.
 func errorText(err error) string {
 	var (
-		ambiguous *service.AmbiguousError
-		unknown   *service.UnknownNameError
-		noMatch   *service.NoMatchError
-		status    statusCoder
+		unknown *service.UnknownNameError
+		status  statusCoder
 	)
 	switch {
-	case errors.As(err, &ambiguous):
-		return inContext(err, ambiguous, ambiguousText(ambiguous))
 	case errors.As(err, &unknown):
 		return inContext(err, unknown, unknownNameText(unknown))
-	case errors.As(err, &noMatch):
-		return inContext(err, noMatch, noMatchText(noMatch))
 	case errors.Is(err, service.ErrNotFound):
 		return err.Error() + ": check the ID, or whether your Planka user can see it"
 	case errors.As(err, &status):
@@ -361,22 +357,6 @@ func inContext(err, inner error, text string) string {
 	return full + "; " + text
 }
 
-// ambiguousText lists the candidates. When each has an ID, the retry goes by
-// ID: the name alone is what was ambiguous.
-func ambiguousText(e *service.AmbiguousError) string {
-	parts := make([]string, len(e.Candidates))
-	retry := "retry with the id of the one you mean"
-	for i, c := range e.Candidates {
-		parts[i] = c.Label
-		if c.ID != "" {
-			parts[i] += " (id " + c.ID + ")"
-		} else {
-			retry = "retry with one of them"
-		}
-	}
-	return fmt.Sprintf("%q matches several %ss: %s; %s", e.Query, e.Kind, strings.Join(parts, "; "), retry)
-}
-
 func unknownNameText(e *service.UnknownNameError) string {
 	text := fmt.Sprintf("no %s %q", e.Kind, e.Name)
 	if e.Scope != "" {
@@ -389,17 +369,6 @@ func unknownNameText(e *service.UnknownNameError) string {
 	text = fmt.Sprintf("%s; valid %ss: %s", text, e.Kind, valid)
 	if e.Hint != "" {
 		text += "; " + e.Hint
-	}
-	return text
-}
-
-func noMatchText(e *service.NoMatchError) string {
-	text := fmt.Sprintf("no %s matching %q", e.Kind, e.Query)
-	if e.Scope != "" {
-		text += " on " + e.Scope
-	}
-	if e.ArchiveHint {
-		text += "; set include_archived to also search the archive"
 	}
 	return text
 }

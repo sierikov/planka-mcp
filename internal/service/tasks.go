@@ -93,7 +93,14 @@ func (t *Tasks) Add(ctx context.Context, ref CardRef, taskList string, items []T
 		return nil, fmt.Errorf("%d of %d items were added to card %s, but reading the card back failed: %w",
 			len(items), len(items), id, err)
 	}
-	return checklistOf(fresh, list, snap), nil
+	out := checklistOf(fresh, list, snap)
+	if created {
+		out.Created = true
+		for _, tl := range cur.Included.TaskLists {
+			out.Others = append(out.Others, tl.Name)
+		}
+	}
+	return out, nil
 }
 
 // checklistOf is the checklist list as the card cr holds it. A task that

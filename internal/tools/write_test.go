@@ -30,6 +30,9 @@ func TestWriteToolAnnotations(t *testing.T) {
 		"add_tasks":      {DestructiveHint: new(false), OpenWorldHint: new(false)},
 		"update_tasks":   {IdempotentHint: true, OpenWorldHint: new(false)},
 		"delete_task":    {DestructiveHint: new(true), OpenWorldHint: new(false)},
+		"create_list":    {DestructiveHint: new(false), OpenWorldHint: new(false)},
+		"update_list":    {IdempotentHint: true, OpenWorldHint: new(false)},
+		"delete_list":    {DestructiveHint: new(true), OpenWorldHint: new(false)},
 	}
 	seen := 0
 	for _, tool := range res.Tools {
@@ -271,4 +274,43 @@ func TestUpdateTasksOutput(t *testing.T) {
 	})
 	assert.False(t, res.IsError, resultText(t, res))
 	assert.JSONEq(t, `[{"id":"t1","name":"one","done":true},{"id":"t2","name":"renamed"}]`, resultText(t, res))
+}
+
+// TestAddTasksFlagsANewChecklist: when the call created the checklist, the
+// result says so and names the card's other checklists, so a typo such as
+// "Taks" is caught.
+func TestAddTasksFlagsANewChecklist(t *testing.T) {
+	tasks := NewMockTaskService(t)
+	tasks.EXPECT().Add(mock.Anything, service.CardRef{Ref: "c1"}, "Taks", []service.TaskInput{{Name: "Write"}}).
+		Return(&service.TaskList{ID: "tl9", Name: "Taks", Tasks: []service.Task{{ID: "t1", Name: "Write"}}, Created: true, Others: []string{"Tasks"}}, nil)
+
+	res := call(t, connect(t, Deps{Tasks: tasks}), "add_tasks", map[string]any{
+		"card": "c1", "task_list": "Taks", "items": []map[string]any{{"name": "Write"}},
+	})
+
+	assert.False(t, res.IsError, resultText(t, res))
+	assert.JSONEq(t, `{"name":"Taks","tasks":[{"id":"t1","name":"Write"}],"created":true,`+
+		`"hint":"this call created the checklist \"Taks\"; the card already had \"Tasks\". `+
+		`If you meant one of those, delete these tasks with delete_task and add them there. `+
+		`The new checklist then stays on the card, empty: no tool deletes a checklist, so remove it in Planka's web UI"}`, resultText(t, res))
+}
+
+// TestCardChoicesAreEnums: position and stopwatch take the service's fixed
+// values, so the schemas list them.
+func TestCardChoicesAreEnums(t *testing.T) {
+	props := inputProps(t, connect(t, Deps{}))
+
+	positions := toAny(service.Positions)
+	assert.Equal(t, positions, props["create_card"]["position"]["enum"])
+	assert.Equal(t, positions, props["move_card"]["position"]["enum"])
+	assert.Equal(t, toAny(service.StopwatchActions), props["update_card"]["stopwatch"]["enum"])
+}
+
+// toAny is vs as JSON decodes it.
+func toAny(vs []string) []any {
+	out := make([]any, len(vs))
+	for i, v := range vs {
+		out[i] = v
+	}
+	return out
 }

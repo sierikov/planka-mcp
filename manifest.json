@@ -87,6 +87,18 @@
     {
       "name": "delete_task",
       "description": "Delete a checklist task"
+    },
+    {
+      "name": "create_list",
+      "description": "Add a list (column) to a board, placed after or before another, optionally closed or coloured"
+    },
+    {
+      "name": "update_list",
+      "description": "Rename, recolour, move or close a list, sort its cards, or archive every card in a closed list"
+    },
+    {
+      "name": "delete_list",
+      "description": "Delete a list; Planka moves its cards to the board's Trash"
     }
   ],
   "user_config": {

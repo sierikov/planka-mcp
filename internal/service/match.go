@@ -3,11 +3,22 @@ package service
 import (
 	"net/url"
 	"strings"
+	"unicode/utf16"
 )
 
 // normalize is the form names are compared in: trimmed and lower-cased.
 func normalize(s string) string {
 	return strings.ToLower(strings.TrimSpace(s))
+}
+
+// jsLen is the length Planka checks a text's limit against: JavaScript's
+// length, in UTF-16 code units, so an emoji counts two.
+func jsLen(s string) int {
+	n := 0
+	for _, r := range s {
+		n += utf16.RuneLen(r)
+	}
+	return n
 }
 
 // findMatches returns the indexes of the names that match query: the exact

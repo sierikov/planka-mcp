@@ -3,6 +3,9 @@ package tools
 import (
 	"context"
 	"errors"
+	"fmt"
+	"strconv"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -142,8 +145,33 @@ func addTasks(tasks TaskService) func(context.Context, *mcp.CallToolRequest, add
 		if err != nil {
 			return errorResult(err)
 		}
-		return jsonResult(toTaskListOut(*list))
+		out := addTasksOut{taskListOut: toTaskListOut(*list), Created: list.Created}
+		if list.Created && len(list.Others) > 0 {
+			out.Hint = fmt.Sprintf("this call created the checklist %q; the card already had %s. "+
+				"If you meant one of those, delete these tasks with delete_task and add them there. "+
+				"The new checklist then stays on the card, empty: no tool deletes a checklist, so remove it in Planka's web UI",
+				list.Name, quoteList(list.Others))
+		}
+		return jsonResult(out)
 	}
+}
+
+// addTasksOut is the checklist add_tasks appended to. Created says the call
+// made it; Hint then names the card's other checklists, in case the name was a
+// typo of one of them.
+type addTasksOut struct {
+	taskListOut
+	Created bool   `json:"created,omitempty"`
+	Hint    string `json:"hint,omitempty"`
+}
+
+// quoteList quotes each name and joins them: "A", "B".
+func quoteList(names []string) string {
+	quoted := make([]string, len(names))
+	for i, n := range names {
+		quoted[i] = strconv.Quote(n)
+	}
+	return strings.Join(quoted, ", ")
 }
 
 func updateTasks(tasks TaskService) func(context.Context, *mcp.CallToolRequest, updateTasksInput) (*mcp.CallToolResult, any, error) {

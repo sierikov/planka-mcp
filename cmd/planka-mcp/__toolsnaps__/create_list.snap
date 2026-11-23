@@ -1,0 +1,57 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add a list (a column) to a Planka board, for example a new stage of a workflow. It goes last unless after or before names a neighbour; closed=true makes it a done list. To rename, reorder or recolour an existing list, use update_list instead. Returns the new list (id, name, color, closed, cards_total) and list_order, the board's list names in order.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "after": {
+        "description": "put it right after this list (exact name or ID); without after or before it goes last",
+        "type": "string"
+      },
+      "before": {
+        "description": "put it right before this list (exact name or ID)",
+        "type": "string"
+      },
+      "board": {
+        "description": "board to add the list to (ID, URL or name)",
+        "type": "string"
+      },
+      "closed": {
+        "description": "make it a closed list, whose cards count as done, like a Done list (default false)",
+        "type": "boolean"
+      },
+      "color": {
+        "description": "the list's colour (default none)",
+        "enum": [
+          "berry-red",
+          "pumpkin-orange",
+          "lagoon-blue",
+          "pink-tulip",
+          "light-mud",
+          "orange-peel",
+          "bright-moss",
+          "antique-blue",
+          "dark-granite",
+          "turquoise-sea"
+        ],
+        "type": "string"
+      },
+      "name": {
+        "description": "the new list's name; it must differ from the board's other lists",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "create_list",
+  "title": "Create list"
+}

@@ -102,6 +102,7 @@ func newDeps(c *planka.Client) tools.Deps {
 		Cards:    cards,
 		Comments: service.NewComments(cards, c),
 		Tasks:    service.NewTasks(cards, c),
+		Lists:    service.NewLists(cards, c),
 	}
 }
 

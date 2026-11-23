@@ -132,6 +132,16 @@ func TestErrorResultAmbiguousWithoutIDs(t *testing.T) {
 	assert.Contains(t, text, "retry with one of them")
 }
 
+// TestErrorResultAmbiguousSaysHowManyMore: the error counts the candidates it
+// left out, so the model narrows the search instead of giving up.
+func TestErrorResultAmbiguousSaysHowManyMore(t *testing.T) {
+	res, _, _ := errorResult(&service.AmbiguousError{Kind: "card", Query: "task", More: 3, Candidates: []service.Candidate{
+		{ID: "1", Label: "Task 1 — B / Todo"}, {ID: "2", Label: "Task 2 — B / Todo"},
+	}})
+	assert.Equal(t, `"task" matches several cards: Task 1 — B / Todo (id 1); Task 2 — B / Todo (id 2); `+
+		`and 3 more not shown (narrow with board or more words); retry with the id of the one you mean`, resultText(t, res))
+}
+
 func TestErrorResultUnknownName(t *testing.T) {
 	res, _, err := errorResult(&service.UnknownNameError{Kind: "list", Name: "Doing", Scope: `board "X"`, Valid: []string{"Open", "In progress", "Done"}})
 	require.NoError(t, err)
@@ -142,11 +152,19 @@ func TestErrorResultUnknownName(t *testing.T) {
 	}
 }
 
+// TestErrorResultNoMatch: the hint names search_cards for the archive, never a
+// bare "set include_archived", which move_card, update_card, delete_card,
+// add_comment, add_tasks and list_comments would refuse. It always suggests
+// fewer or other words.
 func TestErrorResultNoMatch(t *testing.T) {
 	res, _, _ := errorResult(&service.NoMatchError{Kind: "card", Query: "zzz", Scope: `board "X"`, ArchiveHint: true})
-	assert.Contains(t, resultText(t, res), "set include_archived to also search the archive")
+	text := resultText(t, res)
+	assert.Contains(t, text, "try fewer or other words")
+	assert.Contains(t, text, "find one with search_cards include_archived=true, then use its id")
+	assert.NotContains(t, text, "set include_archived")
 
 	res, _, _ = errorResult(&service.NoMatchError{Kind: "card", Query: "zzz"})
+	assert.Contains(t, resultText(t, res), "try fewer or other words")
 	assert.NotContains(t, resultText(t, res), "include_archived")
 }
 

@@ -1,0 +1,88 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to change a Planka list (a column): rename, recolour or move it, make it closed or active, sort its cards by name, due date or creation date, or archive every card in a closed list. Fields you leave out stay as they are. To move single cards, use move_card. Returns the list and list_order, the board's list names in order, plus archived when archive_cards moved cards.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "after": {
+        "description": "move it right after this list (exact name or ID)",
+        "type": "string"
+      },
+      "archive_cards": {
+        "description": "move every card in the list to the board's archive; only for a closed list (closed=true in the same call closes it first)",
+        "type": "boolean"
+      },
+      "before": {
+        "description": "move it right before this list (exact name or ID)",
+        "type": "string"
+      },
+      "board": {
+        "description": "board the list is on (ID, URL or name)",
+        "type": "string"
+      },
+      "closed": {
+        "description": "true makes it a closed list, whose cards count as done; false makes it active",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "color": {
+        "description": "new colour, or none to clear it",
+        "enum": [
+          "berry-red",
+          "pumpkin-orange",
+          "lagoon-blue",
+          "pink-tulip",
+          "light-mud",
+          "orange-peel",
+          "bright-moss",
+          "antique-blue",
+          "dark-granite",
+          "turquoise-sea",
+          "none"
+        ],
+        "type": "string"
+      },
+      "list": {
+        "description": "the list to change, by exact name or ID",
+        "type": "string"
+      },
+      "name": {
+        "description": "new name",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "sort_cards": {
+        "description": "reorder the list's cards by name, due date or creation date",
+        "enum": [
+          "name",
+          "due_date",
+          "created"
+        ],
+        "type": "string"
+      },
+      "sort_order": {
+        "description": "with sort_cards: asc (default) or desc",
+        "enum": [
+          "asc",
+          "desc"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "list"
+    ],
+    "type": "object"
+  },
+  "name": "update_list",
+  "title": "Update list"
+}

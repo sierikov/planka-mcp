@@ -16,8 +16,10 @@ const (
 )
 
 // Get returns a card in full: description, checklists, attachments, custom
-// fields and its newest comments, at most commentsLimit of them (default 20).
-// Tasks that stand for other cards carry a summary of the linked card.
+// fields and its newest comments, at most commentsLimit of them. A
+// commentsLimit of 0 skips the comments, and their read; the card still says
+// how many it has. Tasks that stand for other cards carry a summary of the
+// linked card.
 func (c *Cards) Get(ctx context.Context, ref CardRef, commentsLimit int) (*Card, error) {
 	id, snap, err := c.resolveID(ctx, ref)
 	if err != nil {
@@ -32,9 +34,13 @@ func (c *Cards) Get(ctx context.Context, ref CardRef, commentsLimit int) (*Card,
 			return nil, err
 		}
 	}
-	comments, err := c.comments.Comments(ctx, id, "")
-	if err != nil {
-		return nil, err
+	var comments []Comment
+	if commentsLimit > 0 {
+		page, err := c.comments.Comments(ctx, id, "")
+		if err != nil {
+			return nil, err
+		}
+		comments = toComments(page, snap, commentsLimit)
 	}
 
 	item := cr.Item
@@ -46,7 +52,7 @@ func (c *Cards) Get(ctx context.Context, ref CardRef, commentsLimit int) (*Card,
 		Stopwatch:    c.stopwatch(item.Stopwatch),
 		Attachments:  attachments(cr.Included.Attachments),
 		CustomFields: c.customFields(ctx, cr, snap),
-		Comments:     toComments(comments, snap, commentsLimit),
+		Comments:     comments,
 		Created:      item.CreatedAt,
 	}
 	out.TaskLists = c.taskLists(ctx, cr, snap)

@@ -81,14 +81,26 @@ func toWriteOut(r *service.WriteResult) writeOut {
 	return writeOut{Card: toCardLine(r.Card), CreatedLabels: r.CreatedLabels}
 }
 
+// zoneNote is appended to a due parameter's text, so the model knows the zone
+// even when its client does not pass on the server's instructions.
+func zoneNote(zone string) string {
+	return "; a date or time without an offset is in " + zone + ", the server's time zone"
+}
+
 // registerCardWriteTools adds the tools that create, change and delete cards.
-func registerCardWriteTools(server *mcp.Server, cards CardService) {
+func registerCardWriteTools(server *mcp.Server, cards CardService, zone string) {
+	createSchema := inputSchema[createCardInput](map[string][]string{"position": service.Positions})
+	createSchema.Properties["due"].Description += zoneNote(zone)
+	updateSchema := inputSchema[updateCardInput](map[string][]string{"stopwatch": service.StopwatchActions})
+	updateSchema.Properties["due"].Description += zoneNote(zone)
+
 	addTool(server, &mcp.Tool{
 		Name:  "create_card",
 		Title: "Create card",
 		Description: "Use this to add a new card to a Planka list. " +
 			"Returns the new card as a compact line, plus created_labels when create_labels made labels the board lacked.",
 		Annotations: additive,
+		InputSchema: createSchema,
 	}, createCard(cards))
 
 	addTool(server, &mcp.Tool{
@@ -97,6 +109,7 @@ func registerCardWriteTools(server *mcp.Server, cards CardService) {
 		Description: "Use this to change a Planka card's status by moving it to another list, or to the archive with list=archive. " +
 			"board only narrows the search for the card; to_board is the destination. Returns the card as a compact line.",
 		Annotations: idempotent,
+		InputSchema: inputSchema[moveCardInput](map[string][]string{"position": service.Positions}),
 	}, moveCard(cards))
 
 	addTool(server, &mcp.Tool{
@@ -106,6 +119,7 @@ func registerCardWriteTools(server *mcp.Server, cards CardService) {
 			"and description replaces the whole text, so read it with get_card first to append. " +
 			"Returns the card as a compact line, plus created_labels when create_labels made labels the board lacked.",
 		Annotations: idempotent,
+		InputSchema: updateSchema,
 	}, updateCard(cards))
 
 	addTool(server, &mcp.Tool{

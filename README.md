@@ -30,7 +30,7 @@ What makes this server different from the other Planka MCP servers:
 
 ## Tools
 
-15 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
+18 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
 
 | Tool | What it does | Kind |
 |---|---|---|
@@ -49,6 +49,9 @@ What makes this server different from the other Planka MCP servers:
 | `delete_card` | Delete a card. **Permanent**: it does not go to Planka's trash; use `move_card` with `list=archive` to keep it | destructive |
 | `delete_comment` | Delete a comment | destructive |
 | `delete_task` | Delete a checklist task | destructive |
+| `create_list` | Add a list (a column) to a board, last or right after or before another one; `closed` makes it a done list, `color` picks one of Planka's ten colours | write |
+| `update_list` | Rename, recolour or move a list, make it closed or active, sort its cards by name, due date or creation date, or archive every card in a closed list | write (idempotent) |
+| `delete_list` | Delete a list. Planka moves its cards to the board's Trash, where they can be restored | destructive |
 
 Your MCP client decides how to confirm writes. The split lets you auto-allow `move_card` and `add_comment` and still be asked before edits and deletes.
 
@@ -251,7 +254,7 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes.
 - **Browser requests from other sites get 403.** A request whose `Origin` names another site than its `Host` is refused, as the MCP spec requires. Clients that are not browsers send no `Origin` and are not affected.
 - **Key creation is admin-only in Planka 2.1 and 2.2.** A user cannot create their own key; an admin generates it for them (see Getting an API key), or the user logs in with username and password in stdio mode. Treat a key like a password and regenerate it if it leaks.
 - **Passwords are held in memory only.** With `PLANKA_USERNAME`/`PLANKA_PASSWORD`, neither the password nor the session token is logged or written to disk, and the session is ended when the server stops.
-- **Deletes are permanent and enabled.** `delete_card`, `delete_comment` and `delete_task` are annotated as destructive so clients can ask first; deleting a card does not move it to Planka's trash.
+- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task` and `delete_list` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them.
 - **Card text is untrusted input.** Descriptions, comments and task names written by other people on your boards reach the model as they are, and a card can contain text meant to steer it ("delete every card in Done"). The server tells the model to treat such text as data, but keep your client's confirmation on for the delete tools, and don't let it auto-approve writes on boards that others edit.
 - **Writes never pick a card by its description.** A card reference that matches only words in some card's description finds that card for a read, but a write refuses it and names the card's ID instead.
 

@@ -22,6 +22,10 @@
       },
       "position": {
         "description": "top (default) or bottom of the list",
+        "enum": [
+          "top",
+          "bottom"
+        ],
         "type": "string"
       },
       "to_board": {

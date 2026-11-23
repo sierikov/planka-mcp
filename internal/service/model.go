@@ -26,9 +26,9 @@ type Board struct {
 
 // List is a kanban column. Closed lists hold cards that are finished or dropped.
 type List struct {
-	ID, Name string
-	Closed   bool
-	Cards    []CardSummary
+	ID, Name, Color string
+	Closed          bool
+	Cards           []CardSummary
 }
 
 // CardSummary is the short form of a card. It never carries the description.
@@ -63,6 +63,10 @@ type Stopwatch struct {
 type TaskList struct {
 	ID, Name string
 	Tasks    []Task
+	// Created says Tasks.Add made this checklist; Others then names the
+	// card's other checklists, in case the new name was a typo of one.
+	Created bool
+	Others  []string
 }
 
 // Task is a checklist item. Linked is set when the task stands for another card.

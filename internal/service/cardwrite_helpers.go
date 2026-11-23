@@ -36,15 +36,21 @@ func bottomPosition(existing []float64) float64 {
 	return slices.Max(existing) + positionGap
 }
 
-// pickPosition turns "top" (or empty) and "bottom" into a position among existing.
+// Positions are the places a card can go in a list: the first is the default.
+var Positions = []string{"top", "bottom"}
+
+// StopwatchActions are the values UpdateCard.Stopwatch takes.
+var StopwatchActions = []string{"start", "stop", "reset"}
+
+// pickPosition turns one of Positions ("top" when empty) into a position among existing.
 func pickPosition(where string, existing []float64) (float64, error) {
-	switch normalize(where) {
+	switch where {
 	case "", "top":
 		return topPosition(existing), nil
 	case "bottom":
 		return bottomPosition(existing), nil
 	}
-	return 0, fmt.Errorf("unknown position %q: use top or bottom", where)
+	return 0, fmt.Errorf("unknown position %q: use %s", where, orList(Positions))
 }
 
 // listPositions returns the positions of the cards in a list, leaving out the
@@ -129,8 +135,8 @@ func (c *Cards) validatePatch(in UpdateCard) (planka.UpdateCardRequest, error) {
 	if in.DueCompleted != nil {
 		req.IsDueCompleted = planka.Some(*in.DueCompleted)
 	}
-	if !slices.Contains([]string{"", "start", "stop", "reset"}, normalize(in.Stopwatch)) {
-		return req, fmt.Errorf("unknown stopwatch action %q: use start, stop or reset", in.Stopwatch)
+	if in.Stopwatch != "" && !slices.Contains(StopwatchActions, in.Stopwatch) {
+		return req, fmt.Errorf("unknown stopwatch action %q: use %s", in.Stopwatch, orList(StopwatchActions))
 	}
 	return req, nil
 }
@@ -151,7 +157,7 @@ func (c *Cards) withStopwatch(req planka.UpdateCardRequest, action string, prev 
 	if prev != nil {
 		running, total = prev.StartedAt != nil, prev.Total
 	}
-	switch normalize(action) {
+	switch action {
 	case "start":
 		if !running {
 			now := c.now()

@@ -32,7 +32,7 @@
         "type": "string"
       },
       "due": {
-        "description": "due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339",
+        "description": "due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339; a date or time without an offset is in Europe/Berlin, the server's time zone",
         "type": "string"
       },
       "labels": {
@@ -51,6 +51,10 @@
       },
       "position": {
         "description": "top (default) or bottom of the list",
+        "enum": [
+          "top",
+          "bottom"
+        ],
         "type": "string"
       },
       "title": {

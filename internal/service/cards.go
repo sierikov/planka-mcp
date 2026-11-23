@@ -217,7 +217,7 @@ func (c *Cards) findCard(ctx context.Context, ref CardRef) (string, *hit, error)
 	if strings.TrimSpace(ref.Ref) == "" {
 		return "", nil, errors.New("card reference is empty")
 	}
-	hits, _, err := c.search(ctx, SearchQuery{
+	hits, more, err := c.search(ctx, SearchQuery{
 		Text: ref.Ref, Board: ref.Board, IncludeArchived: ref.IncludeArchived, Limit: maxCandidates + 1,
 	})
 	if err != nil {
@@ -237,7 +237,7 @@ func (c *Cards) findCard(ctx context.Context, ref CardRef) (string, *hit, error)
 	for i := range cands {
 		cands[i] = candidate(hits[i])
 	}
-	return "", nil, &AmbiguousError{Kind: "card", Query: ref.Ref, Candidates: cands}
+	return "", nil, &AmbiguousError{Kind: "card", Query: ref.Ref, Candidates: cands, More: len(hits) + more - len(cands)}
 }
 
 // candidate names a search hit in an error: title, board and list, with its ID.
