@@ -1,0 +1,38 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Weekly update PRs for the Go modules, the Go toolchain, the Dockerfile's base images and the workflows' pinned actions, plus security PRs from osv.dev at any time, without Dependabot alerts. deploy/compose.yml is left alone: it pins the Planka version the end-to-end tests run against.",
+  "extends": ["config:recommended", ":semanticCommitTypeAll(build)"],
+  "osvVulnerabilityAlerts": true,
+  "enabledManagers": ["gomod", "dockerfile", "github-actions"],
+  "timezone": "Europe/Berlin",
+  "schedule": ["* 0-5 * * 1"],
+  "postUpdateOptions": ["gomodTidy"],
+  "packageRules": [
+    {
+      "description": "One PR for the Go modules.",
+      "matchManagers": ["gomod"],
+      "groupName": "Go modules"
+    },
+    {
+      "description": "One PR for the base images.",
+      "matchManagers": ["dockerfile"],
+      "groupName": "base images"
+    },
+    {
+      "description": "The toolchain line in go.mod and the golang build image move together, so the binaries and the image are built with the same Go.",
+      "matchManagers": ["gomod"],
+      "matchDepTypes": ["toolchain"],
+      "groupName": "Go toolchain"
+    },
+    {
+      "matchManagers": ["dockerfile"],
+      "matchDepNames": ["golang"],
+      "groupName": "Go toolchain"
+    },
+    {
+      "description": "One PR for the workflows' pinned actions.",
+      "matchManagers": ["github-actions"],
+      "groupName": "GitHub Actions"
+    }
+  ]
+}
