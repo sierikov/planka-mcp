@@ -33,7 +33,7 @@ func sizeCard(n int, list string) service.CardSummary {
 		Board:     "Planka MCP",
 		List:      list,
 		Labels:    []string{"feature", "panel-review"},
-		Assignees: []string{"Artem Sierikov"},
+		Assignees: []string{"Morgan Example"},
 	}
 	if n%3 == 0 {
 		due := time.Date(2026, 11, 2+n%20, 0, 0, 0, 0, time.Local)
@@ -62,7 +62,7 @@ func sizeBoard(lists []service.List) *service.Board {
 	return &service.Board{
 		ID: sizeID(0), Name: "Planka MCP", Project: "Projects", Lists: lists,
 		Labels:  []string{"research", "feature", "release", "mcprush", "idea", "bug", "high", "panel-review", "refactor", "docs"},
-		Members: []string{"Artem Sierikov", "Second Member", "Third Member"},
+		Members: []string{"Morgan Example", "Second Member", "Third Member"},
 	}
 }
 
@@ -79,7 +79,7 @@ func sizeLists(open, progress, done, dropped int) []service.List {
 func sizeComments(n, textLen int) []service.Comment {
 	out := make([]service.Comment, n)
 	for i := range out {
-		out[i] = service.Comment{ID: sizeID(50000 + i), Author: "Artem Sierikov", Text: sizeText(textLen), Created: time.Date(2026, 11, 2, 10, i%60, 0, 0, time.Local)}
+		out[i] = service.Comment{ID: sizeID(50000 + i), Author: "Morgan Example", Text: sizeText(textLen), Created: time.Date(2026, 11, 2, 10, i%60, 0, 0, time.Local)}
 	}
 	return out
 }

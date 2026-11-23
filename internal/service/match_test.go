@@ -92,7 +92,7 @@ func TestParseRef(t *testing.T) {
 		wantID string
 		wantOK bool
 	}{
-		{name: "numeric id", in: "1887084132131931341", kind: "cards", wantID: "1887084132131931341", wantOK: true},
+		{name: "numeric id", in: "1234567890123456789", kind: "cards", wantID: "1234567890123456789", wantOK: true},
 		{name: "id with spaces", in: " 42 ", kind: "cards", wantID: "42", wantOK: true},
 		{name: "card url", in: "https://planka.example.com/cards/123?x=1", kind: "cards", wantID: "123", wantOK: true},
 		{name: "board url", in: "https://planka.example.com/boards/77", kind: "boards", wantID: "77", wantOK: true},
