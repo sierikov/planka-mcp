@@ -110,7 +110,11 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"delete_comment": {"comment_id"},
 		"add_tasks":      {"card", "items"},
 		"update_tasks":   {"items"},
-		"delete_task":    {"task_id"},
+		"delete_task":    nil,
+
+		"create_checklist": {"card", "name"},
+		"update_checklist": {"card", "checklist"},
+		"delete_checklist": {"card", "checklist"},
 
 		"create_list": {"board", "name"},
 		"update_list": {"board", "list"},

@@ -115,10 +115,62 @@ type CreateTaskRequest struct {
 }
 
 // UpdateTaskRequest is the body of PATCH /api/tasks/:id; nil fields are left
-// out.
+// out. TaskListID moves the task to another checklist of the same card. A
+// Null AssigneeUserID removes the assignee.
 type UpdateTaskRequest struct {
-	Name        *string `json:"name,omitempty"`
-	IsCompleted *bool   `json:"isCompleted,omitempty"`
+	Name           *string
+	IsCompleted    *bool
+	TaskListID     *string
+	Position       *float64
+	AssigneeUserID Optional[string]
+}
+
+// MarshalJSON emits only the fields that are set.
+func (r UpdateTaskRequest) MarshalJSON() ([]byte, error) {
+	m := map[string]any{}
+	if r.Name != nil {
+		m["name"] = *r.Name
+	}
+	if r.IsCompleted != nil {
+		m["isCompleted"] = *r.IsCompleted
+	}
+	if r.TaskListID != nil {
+		m["taskListId"] = *r.TaskListID
+	}
+	if r.Position != nil {
+		m["position"] = *r.Position
+	}
+	put(m, "assigneeUserId", r.AssigneeUserID)
+	return json.Marshal(m)
+}
+
+// CreateTaskListRequest is the body of POST /api/cards/:cardId/task-lists. A
+// nil display option takes Planka's default (shown on the card, completed
+// tasks shown).
+type CreateTaskListRequest struct {
+	Position           float64 `json:"position"`
+	Name               string  `json:"name"`
+	ShowOnFrontOfCard  *bool   `json:"showOnFrontOfCard,omitempty"`
+	HideCompletedTasks *bool   `json:"hideCompletedTasks,omitempty"`
+}
+
+// UpdateTaskListRequest is the body of PATCH /api/task-lists/:id. Only the
+// fields that are Set are sent.
+type UpdateTaskListRequest struct {
+	Position           Optional[float64]
+	Name               Optional[string]
+	ShowOnFrontOfCard  Optional[bool]
+	HideCompletedTasks Optional[bool]
+}
+
+// MarshalJSON emits only the Set fields.
+func (r UpdateTaskListRequest) MarshalJSON() ([]byte, error) {
+	m := map[string]any{}
+	put(m, "position", r.Position)
+	put(m, "name", r.Name)
+	put(m, "showOnFrontOfCard", r.ShowOnFrontOfCard)
+	put(m, "hideCompletedTasks", r.HideCompletedTasks)
+	return json.Marshal(m)
 }
 
 // item is the {"item": ...} envelope of a single-record answer.
@@ -204,13 +256,19 @@ func (c *Client) DeleteComment(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/comments/"+pathParam(id), nil, nil, nil)
 }
 
-// CreateTaskList adds a task list to a card.
-func (c *Client) CreateTaskList(ctx context.Context, cardID, name string, position float64) (*TaskList, error) {
-	body := struct {
-		Position float64 `json:"position"`
-		Name     string  `json:"name"`
-	}{position, name}
-	return send[TaskList](ctx, c, http.MethodPost, "/api/cards/"+pathParam(cardID)+"/task-lists", body)
+// CreateTaskList adds a task list (a checklist) to a card.
+func (c *Client) CreateTaskList(ctx context.Context, cardID string, r CreateTaskListRequest) (*TaskList, error) {
+	return send[TaskList](ctx, c, http.MethodPost, "/api/cards/"+pathParam(cardID)+"/task-lists", r)
+}
+
+// UpdateTaskList renames or moves a task list, or changes how it shows.
+func (c *Client) UpdateTaskList(ctx context.Context, id string, r UpdateTaskListRequest) (*TaskList, error) {
+	return send[TaskList](ctx, c, http.MethodPatch, "/api/task-lists/"+pathParam(id), r)
+}
+
+// DeleteTaskList deletes a task list. Planka deletes its tasks with it.
+func (c *Client) DeleteTaskList(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/task-lists/"+pathParam(id), nil, nil, nil)
 }
 
 // CreateTask adds a task to a task list.
@@ -218,7 +276,7 @@ func (c *Client) CreateTask(ctx context.Context, taskListID string, r CreateTask
 	return send[Task](ctx, c, http.MethodPost, "/api/task-lists/"+pathParam(taskListID)+"/tasks", r)
 }
 
-// UpdateTask renames a task or toggles its completion.
+// UpdateTask renames, ticks, moves or assigns a task.
 func (c *Client) UpdateTask(ctx context.Context, id string, r UpdateTaskRequest) (*Task, error) {
 	return send[Task](ctx, c, http.MethodPatch, "/api/tasks/"+pathParam(id), r)
 }

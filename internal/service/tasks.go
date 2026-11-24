@@ -36,14 +36,6 @@ type TaskInput struct {
 	Name, Link string
 }
 
-// TaskUpdate changes one task, found by ID. At least one of Completed and Name
-// is set; a nil field is left alone.
-type TaskUpdate struct {
-	ID        string
-	Completed *bool
-	Name      *string
-}
-
 // Add appends tasks to a checklist of a card, at the bottom and in order, and
 // returns the checklist as it is afterwards. The checklist is found by its
 // name, exactly but ignoring case ("Tasks" when taskList is empty); a missing
@@ -78,7 +70,8 @@ func (t *Tasks) Add(ctx context.Context, ref CardRef, taskList string, items []T
 	created := list == nil
 	var taken []float64
 	if created {
-		if list, err = t.api.CreateTaskList(ctx, id, listName, bottomPosition(taskListPositions(cur.Included.TaskLists))); err != nil {
+		req := planka.CreateTaskListRequest{Name: listName, Position: bottomPosition(taskListPositions(cur.Included.TaskLists))}
+		if list, err = t.api.CreateTaskList(ctx, id, req); err != nil {
 			return nil, err
 		}
 	} else {
@@ -107,20 +100,29 @@ func (t *Tasks) Add(ctx context.Context, ref CardRef, taskList string, items []T
 // links to a card on the board snap shows that card's summary; any other
 // shows the ID and the task's name.
 func checklistOf(cr *planka.CardResponse, list *planka.TaskList, snap *boardSnapshot) *TaskList {
-	link := func(cardID, name string) *CardSummary {
-		if _, ok := snap.cards[cardID]; ok {
-			s := cardSummary(snap, cardID)
-			return &s
-		}
-		return &CardSummary{ID: cardID, Title: name}
-	}
 	for _, tl := range cr.Included.TaskLists {
 		if tl.ID == list.ID {
-			out := toTaskList(tl, cr.Included.Tasks, link)
+			out := toTaskList(tl, cr.Included.Tasks, boardView(cr, snap))
 			return &out
 		}
 	}
 	return &TaskList{ID: list.ID, Name: list.Name}
+}
+
+// boardView converts the tasks of the card cr with what its board snap knows:
+// a linked card on the board gets its summary, one elsewhere its ID and the
+// task's name.
+func boardView(cr *planka.CardResponse, snap *boardSnapshot) taskView {
+	return taskView{
+		link: func(cardID, name string) *CardSummary {
+			if _, ok := snap.cards[cardID]; ok {
+				s := cardSummary(snap, cardID)
+				return &s
+			}
+			return &CardSummary{ID: cardID, Title: name}
+		},
+		person: people(snap, cr.Included.Users),
+	}
 }
 
 // addAll creates the tasks in list one after another, from position pos on.
@@ -184,55 +186,6 @@ func taskPositions(tasks []planka.Task, listID string) []float64 {
 		}
 	}
 	return out
-}
-
-// Update changes tasks in order. Every item is checked before the first
-// write. It returns the tasks as Planka answered each change.
-func (t *Tasks) Update(ctx context.Context, items []TaskUpdate) ([]Task, error) {
-	if len(items) == 0 {
-		return nil, errors.New("no items to update")
-	}
-	ids := make([]string, len(items))
-	reqs := make([]planka.UpdateTaskRequest, len(items))
-	for i, it := range items {
-		ids[i] = strings.TrimSpace(it.ID)
-		reqs[i] = planka.UpdateTaskRequest{Name: it.Name, IsCompleted: it.Completed}
-		switch {
-		case ids[i] == "":
-			return nil, fmt.Errorf("item %d: task ID is empty", i+1)
-		case it.Completed == nil && it.Name == nil:
-			return nil, fmt.Errorf("item %d (%s): nothing to change, give completed or name", i+1, ids[i])
-		case it.Name != nil && strings.TrimSpace(*it.Name) == "":
-			return nil, fmt.Errorf("item %d (%s): task name is empty", i+1, ids[i])
-		case it.Name != nil:
-			name := strings.TrimSpace(*it.Name)
-			reqs[i].Name = &name
-		}
-	}
-	out := make([]Task, 0, len(items))
-	for i, id := range ids {
-		got, err := t.api.UpdateTask(ctx, id, reqs[i])
-		if err != nil {
-			if i == 0 {
-				return nil, taskUpdateError(id, err)
-			}
-			return nil, fmt.Errorf("tasks were partly updated (applied: %s), but item %d (%s) failed: %w",
-				strings.Join(ids[:i], ", "), i+1, id, taskUpdateError(id, err))
-		}
-		out = append(out, toTask(*got, func(cardID, name string) *CardSummary {
-			return &CardSummary{ID: cardID, Title: name}
-		}))
-	}
-	return out, nil
-}
-
-// Delete deletes a task, found by its ID.
-func (t *Tasks) Delete(ctx context.Context, id string) error {
-	id = strings.TrimSpace(id)
-	if id == "" {
-		return errors.New("task ID is empty")
-	}
-	return notFound("task", id, t.api.DeleteTask(ctx, id))
 }
 
 // resolveLinks returns the card ID each item links to, "" for an item that
@@ -306,26 +259,56 @@ func findTaskList(lists []planka.TaskList, name string) (*planka.TaskList, error
 	return nil, &AmbiguousError{Kind: "task list", Query: name, Candidates: cands}
 }
 
-// toTaskList converts a checklist with its tasks, by position. link
-// summarises the card a task stands for.
-func toTaskList(tl planka.TaskList, all []planka.Task, link func(cardID, name string) *CardSummary) TaskList {
-	own := slices.DeleteFunc(slices.Clone(all), func(tk planka.Task) bool { return tk.TaskListID != tl.ID })
+// taskView is what converting a task needs besides the task: link summarises
+// the card a task stands for, person names a user by ID.
+type taskView struct {
+	link   func(cardID, name string) *CardSummary
+	person func(userID string) string
+}
+
+// people names a user of the board snap, or one of extra (the users a card
+// response carries). A user neither knows goes by ID.
+func people(snap *boardSnapshot, extra []planka.User) func(string) string {
+	return func(id string) string {
+		if u, ok := snap.users[id]; ok {
+			return userName(u)
+		}
+		for _, u := range extra {
+			if u.ID == id {
+				return userName(u)
+			}
+		}
+		return id
+	}
+}
+
+// tasksOf is the tasks of the checklist listID among all, by position.
+func tasksOf(all []planka.Task, listID string) []planka.Task {
+	own := slices.DeleteFunc(slices.Clone(all), func(tk planka.Task) bool { return tk.TaskListID != listID })
 	slices.SortStableFunc(own, func(a, b planka.Task) int { return cmp.Compare(a.Position, b.Position) })
-	out := TaskList{ID: tl.ID, Name: tl.Name}
-	for _, tk := range own {
-		out.Tasks = append(out.Tasks, toTask(tk, link))
+	return own
+}
+
+// toTaskList converts a checklist with its tasks, by position.
+func toTaskList(tl planka.TaskList, all []planka.Task, v taskView) TaskList {
+	out := TaskList{ID: tl.ID, Name: tl.Name, ShowOnFrontOfCard: tl.ShowOnFrontOfCard, HideCompletedTasks: tl.HideCompletedTasks}
+	for _, tk := range tasksOf(all, tl.ID) {
+		out.Tasks = append(out.Tasks, toTask(tk, v))
 	}
 	return out
 }
 
-// toTask converts a task. A task that stands for a card carries link's summary
-// of it, and is named after the card: Planka keeps the name the card had when
-// it was linked.
-func toTask(tk planka.Task, link func(cardID, name string) *CardSummary) Task {
+// toTask converts a task. A task that stands for a card carries the link's
+// summary of it, and is named after the card: Planka keeps the name the card
+// had when it was linked.
+func toTask(tk planka.Task, v taskView) Task {
 	out := Task{ID: tk.ID, Name: deref(tk.Name), Completed: tk.IsCompleted}
 	if tk.LinkedCardID != nil {
-		out.Linked = link(*tk.LinkedCardID, out.Name)
+		out.Linked = v.link(*tk.LinkedCardID, out.Name)
 		out.Name = cmp.Or(out.Linked.Title, out.Name)
+	}
+	if tk.AssigneeUserID != nil {
+		out.Assignee = v.person(*tk.AssigneeUserID)
 	}
 	return out
 }

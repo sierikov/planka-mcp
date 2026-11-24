@@ -16,6 +16,16 @@
         "description": "only this board (ID, URL or name)",
         "type": "string"
       },
+      "due": {
+        "description": "only cards due: overdue (past due and not marked done), today, this_week (Monday to Sunday), or none (no due date), in the server's time zone",
+        "enum": [
+          "overdue",
+          "today",
+          "this_week",
+          "none"
+        ],
+        "type": "string"
+      },
       "include_archived": {
         "description": "also search archived cards (default false)",
         "type": "boolean"

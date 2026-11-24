@@ -109,6 +109,12 @@
           "description": "Base URL of your Planka v2 instance, e.g. https://planka.example.com. Do not set PLANKA_API_KEY: each client sends its own key.",
           "placeholder": "https://planka.example.com",
           "isRequired": true
+        },
+        {
+          "name": "PLANKA_PUBLIC_URL",
+          "description": "The address people open Planka at, for card links in results, when PLANKA_URL is an internal one such as http://planka:1337. Defaults to PLANKA_URL.",
+          "placeholder": "https://planka.example.com",
+          "isRequired": false
         }
       ],
       "transport": {

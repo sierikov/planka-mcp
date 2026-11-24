@@ -118,17 +118,22 @@ type TaskList struct {
 	CardID   string  `json:"cardId"`
 	Name     string  `json:"name"`
 	Position float64 `json:"position"`
+	// ShowOnFrontOfCard shows the checklist on the card in the board view;
+	// Planka's default is true. HideCompletedTasks hides its ticked tasks.
+	ShowOnFrontOfCard  bool `json:"showOnFrontOfCard"`
+	HideCompletedTasks bool `json:"hideCompletedTasks"`
 }
 
 // Task is a checklist item. A linked task has LinkedCardID set, and Planka
 // fills Name with the linked card's name.
 type Task struct {
-	ID           string  `json:"id"`
-	TaskListID   string  `json:"taskListId"`
-	LinkedCardID *string `json:"linkedCardId"`
-	Name         *string `json:"name"`
-	IsCompleted  bool    `json:"isCompleted"`
-	Position     float64 `json:"position"`
+	ID             string  `json:"id"`
+	TaskListID     string  `json:"taskListId"`
+	LinkedCardID   *string `json:"linkedCardId"`
+	AssigneeUserID *string `json:"assigneeUserId"`
+	Name           *string `json:"name"`
+	IsCompleted    bool    `json:"isCompleted"`
+	Position       float64 `json:"position"`
 }
 
 // Attachment is a file or link attached to a card.

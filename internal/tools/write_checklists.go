@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/jsonschema-go/jsonschema"
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
 	"github.com/sierikov/planka-mcp/internal/service"
@@ -43,14 +44,22 @@ type taskChangeInput struct {
 	TaskID    string  `json:"task_id" jsonschema:"ID of the task, from get_card"`
 	Completed *bool   `json:"completed,omitempty" jsonschema:"tick (true) or untick (false) the task"`
 	Name      *string `json:"name,omitempty" jsonschema:"new task text"`
+	Checklist string  `json:"checklist,omitempty" jsonschema:"move the task to this checklist of the same card (exact name or ID); it keeps its id and done state, and goes to the bottom unless position, after or before says otherwise"`
+	Position  string  `json:"position,omitempty" jsonschema:"top or bottom of its checklist"`
+	After     string  `json:"after,omitempty" jsonschema:"put the task right after this task (ID) of its checklist"`
+	Before    string  `json:"before,omitempty" jsonschema:"put the task right before this task (ID) of its checklist"`
+	Assignee  *string `json:"assignee,omitempty" jsonschema:"assign the task to a board member by name, or me; an empty string removes the assignee"`
 }
 
 type updateTasksInput struct {
-	Items []taskChangeInput `json:"items" jsonschema:"tasks to change; each has a task_id and a completed or name"`
+	Card  string            `json:"card,omitempty" jsonschema:"the card the tasks are on (ID, URL or title); needed to move, reorder or assign tasks"`
+	Board string            `json:"board,omitempty" jsonschema:"board to look on when card is a title (ID, URL or name)"`
+	Items []taskChangeInput `json:"items" jsonschema:"tasks to change, applied in order; each has a task_id and at least one change"`
 }
 
 type deleteTaskInput struct {
-	TaskID string `json:"task_id" jsonschema:"ID of the task to delete, from get_card"`
+	TaskID  string   `json:"task_id,omitempty" jsonschema:"ID of the task to delete, from get_card"`
+	TaskIDs []string `json:"task_ids,omitempty" jsonschema:"IDs of several tasks to delete in one call, instead of task_id"`
 }
 
 // registerChecklistWriteTools adds the tools that change comments and checklist tasks.
@@ -89,16 +98,19 @@ func registerChecklistWriteTools(server *mcp.Server, comments CommentService, ta
 	addTool(server, &mcp.Tool{
 		Name:  "update_tasks",
 		Title: "Update tasks",
-		Description: "Use this to tick, untick or rename tasks on Planka cards, several in one call. " +
-			"A task that links a card cannot be changed: Planka ticks it when that card moves to a closed list such as Done. " +
-			"Returns the changed tasks.",
+		Description: "Use this to tick, untick, rename, reorder or assign tasks on a Planka card, or move them to another checklist of the same card, " +
+			"several in one call (give card to move, reorder or assign). " +
+			"A task that links a card can only be moved or reordered: Planka ticks it when that card moves to a closed list such as Done. " +
+			"Returns the changed tasks, with their checklist when card is given.",
 		Annotations: idempotent,
+		InputSchema: taskChangeSchema(),
 	}, updateTasks(tasks))
 
 	addTool(server, &mcp.Tool{
-		Name:        "delete_task",
-		Title:       "Delete task",
-		Description: "Use this to remove a task from a checklist on a Planka card for good. Returns the deleted task's id.",
+		Name:  "delete_task",
+		Title: "Delete task",
+		Description: "Use this to remove tasks from the checklists of a Planka card for good: one with task_id, or several with task_ids. " +
+			"Returns the deleted tasks' ids.",
 		Annotations: destructive,
 	}, deleteTask(tasks))
 }
@@ -148,8 +160,8 @@ func addTasks(tasks TaskService) func(context.Context, *mcp.CallToolRequest, add
 		out := addTasksOut{taskListOut: toTaskListOut(*list), Created: list.Created}
 		if list.Created && len(list.Others) > 0 {
 			out.Hint = fmt.Sprintf("this call created the checklist %q; the card already had %s. "+
-				"If you meant one of those, delete these tasks with delete_task and add them there. "+
-				"The new checklist then stays on the card, empty: no tool deletes a checklist, so remove it in Planka's web UI",
+				"If you meant one of those, move these tasks there with update_tasks (give card and checklist), "+
+				"then delete the new checklist with delete_checklist",
 				list.Name, quoteList(list.Others))
 		}
 		return jsonResult(out)
@@ -178,9 +190,12 @@ func updateTasks(tasks TaskService) func(context.Context, *mcp.CallToolRequest, 
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in updateTasksInput) (*mcp.CallToolResult, any, error) {
 		updates := make([]service.TaskUpdate, len(in.Items))
 		for i, it := range in.Items {
-			updates[i] = service.TaskUpdate{ID: it.TaskID, Completed: it.Completed, Name: it.Name}
+			updates[i] = service.TaskUpdate{
+				ID: it.TaskID, Completed: it.Completed, Name: it.Name,
+				Checklist: it.Checklist, Position: it.Position, After: it.After, Before: it.Before, Assignee: it.Assignee,
+			}
 		}
-		changed, err := tasks.Update(ctx, updates)
+		changed, err := tasks.Update(ctx, service.CardRef{Ref: in.Card, Board: in.Board}, updates)
 		if err != nil {
 			return errorResult(err)
 		}
@@ -194,9 +209,36 @@ func updateTasks(tasks TaskService) func(context.Context, *mcp.CallToolRequest, 
 
 func deleteTask(tasks TaskService) func(context.Context, *mcp.CallToolRequest, deleteTaskInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in deleteTaskInput) (*mcp.CallToolResult, any, error) {
-		if err := tasks.Delete(ctx, in.TaskID); err != nil {
+		switch {
+		case in.TaskID != "" && len(in.TaskIDs) > 0:
+			return errorResult(errors.New("give task_id or task_ids, not both"))
+		case in.TaskID != "":
+			if err := tasks.Delete(ctx, []string{in.TaskID}); err != nil {
+				return errorResult(err)
+			}
+			return jsonResult(deletedOut{Deleted: in.TaskID})
+		case len(in.TaskIDs) == 0:
+			return errorResult(errors.New("give task_id, or task_ids for several tasks"))
+		}
+		if err := tasks.Delete(ctx, in.TaskIDs); err != nil {
 			return errorResult(err)
 		}
-		return jsonResult(deletedOut{Deleted: in.TaskID})
+		return jsonResult(deletedTasksOut{Deleted: in.TaskIDs})
 	}
+}
+
+// deletedTasksOut confirms the tasks delete_task removed with task_ids.
+type deletedTasksOut struct {
+	Deleted []string `json:"deleted"`
+}
+
+// taskChangeSchema is update_tasks' input schema, with position limited to
+// top and bottom inside each item.
+func taskChangeSchema() *jsonschema.Schema {
+	s := inputSchema[updateTasksInput](nil)
+	item := s.Properties["items"].Items
+	for _, p := range service.Positions {
+		item.Properties["position"].Enum = append(item.Properties["position"].Enum, p)
+	}
+	return s
 }

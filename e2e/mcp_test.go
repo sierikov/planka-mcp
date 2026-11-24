@@ -132,6 +132,7 @@ type (
 		Labels    []string `json:"labels"`
 		Assignees []string `json:"assignees"`
 		Due       string   `json:"due"`
+		URL       string   `json:"url"`
 	}
 	searchResult struct {
 		Cards []cardLine `json:"cards"`
@@ -146,17 +147,37 @@ type (
 		CreatedLabels []string `json:"created_labels"`
 	}
 	task struct {
-		ID   string `json:"id"`
-		Name string `json:"name"`
-		Done bool   `json:"done"`
-		Link *struct {
+		ID        string `json:"id"`
+		Name      string `json:"name"`
+		Done      bool   `json:"done"`
+		Checklist string `json:"checklist"`
+		Assignee  string `json:"assignee"`
+		Link      *struct {
 			ID    string `json:"id"`
 			Title string `json:"title"`
 		} `json:"link"`
 	}
 	taskList struct {
-		Name  string `json:"name"`
-		Tasks []task `json:"tasks"`
+		ID                 string `json:"id"`
+		Name               string `json:"name"`
+		ShowOnFrontOfCard  *bool  `json:"show_on_front_of_card"`
+		HideCompletedTasks bool   `json:"hide_completed_tasks"`
+		Tasks              []task `json:"tasks"`
+	}
+	checklistResult struct {
+		Checklist struct {
+			ID                 string `json:"id"`
+			Name               string `json:"name"`
+			ShowOnFrontOfCard  bool   `json:"show_on_front_of_card"`
+			HideCompletedTasks bool   `json:"hide_completed_tasks"`
+			TasksTotal         int    `json:"tasks_total"`
+		} `json:"checklist"`
+		Order []string `json:"checklist_order"`
+	}
+	deletedChecklist struct {
+		Deleted string `json:"deleted"`
+		Name    string `json:"name"`
+		Tasks   []task `json:"tasks"`
 	}
 	deletedOut struct {
 		Deleted string `json:"deleted"`

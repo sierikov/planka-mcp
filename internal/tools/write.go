@@ -13,9 +13,10 @@ var (
 
 // registerWriteTools adds the tools that change Planka.
 func registerWriteTools(server *mcp.Server, deps Deps, zone string) {
-	registerCardWriteTools(server, deps.Cards, zone)
+	registerCardWriteTools(server, deps.Cards, zone, cardLinks(deps.PublicURL))
 	registerListWriteTools(server, deps.Lists)
 	registerChecklistWriteTools(server, deps.Comments, deps.Tasks)
+	registerChecklistTools(server, deps.Tasks)
 }
 
 // deletedOut confirms a delete. Title is set for cards only.

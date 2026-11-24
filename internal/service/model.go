@@ -59,21 +59,28 @@ type Stopwatch struct {
 	Running bool
 }
 
-// TaskList is a checklist on a card.
+// TaskList is a checklist on a card. ShowOnFrontOfCard and
+// HideCompletedTasks are how Planka displays it (by default: shown on the
+// card, ticked tasks shown).
 type TaskList struct {
-	ID, Name string
-	Tasks    []Task
+	ID, Name                              string
+	ShowOnFrontOfCard, HideCompletedTasks bool
+	Tasks                                 []Task
 	// Created says Tasks.Add made this checklist; Others then names the
 	// card's other checklists, in case the new name was a typo of one.
 	Created bool
 	Others  []string
 }
 
-// Task is a checklist item. Linked is set when the task stands for another card.
+// Task is a checklist item. Linked is set when the task stands for another
+// card, and Assignee names the person the task is assigned to. Checklist names
+// the checklist the task is in, where a result needs it (update_tasks).
 type Task struct {
 	ID, Name  string
 	Completed bool
 	Linked    *CardSummary
+	Assignee  string
+	Checklist string
 }
 
 // Attachment is a file or link attached to a card.

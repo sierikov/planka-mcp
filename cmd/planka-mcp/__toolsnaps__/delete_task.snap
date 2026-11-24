@@ -5,18 +5,25 @@
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Use this to remove a task from a checklist on a Planka card for good. Returns the deleted task's id.",
+  "description": "Use this to remove tasks from the checklists of a Planka card for good: one with task_id, or several with task_ids. Returns the deleted tasks' ids.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {
       "task_id": {
         "description": "ID of the task to delete, from get_card",
         "type": "string"
+      },
+      "task_ids": {
+        "description": "IDs of several tasks to delete in one call, instead of task_id",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
       }
     },
-    "required": [
-      "task_id"
-    ],
     "type": "object"
   },
   "name": "delete_task",

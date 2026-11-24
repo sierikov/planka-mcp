@@ -957,3 +957,55 @@ func TestGetCardWithoutComments(t *testing.T) {
 	assert.Empty(t, got.Comments)
 	assert.Equal(t, "Write README", got.Title)
 }
+
+// TestSearchDueFilter: due dates are compared in the server's time zone; a
+// week runs from Monday, and a card marked done is not overdue.
+func TestSearchDueFilter(t *testing.T) {
+	berlin := time.FixedZone("CET", 60*60)
+	now := time.Date(2026, 11, 25, 15, 0, 0, 0, berlin) // a Wednesday
+	b := synthBoard("b1", "pw", "B1",
+		spec{id: "c1", title: "Late", list: "todo", pos: 1},
+		spec{id: "c2", title: "Late but done", list: "todo", pos: 2},
+		spec{id: "c3", title: "Today", list: "todo", pos: 3},
+		spec{id: "c4", title: "Sunday", list: "todo", pos: 4},
+		spec{id: "c5", title: "Next Monday", list: "todo", pos: 5},
+		spec{id: "c6", title: "No date", list: "todo", pos: 6})
+	at := func(d time.Time) *time.Time { return &d }
+	cards := b.Included.Cards
+	cards[0].DueDate = at(time.Date(2026, 11, 24, 9, 0, 0, 0, berlin))
+	cards[1].DueDate, cards[1].IsDueCompleted = at(time.Date(2026, 11, 20, 9, 0, 0, 0, berlin)), new(true)
+	cards[2].DueDate = at(time.Date(2026, 11, 25, 23, 30, 0, 0, berlin))
+	// Sunday 23:30 in Berlin is Sunday 22:30 UTC: still this week.
+	cards[3].DueDate = at(time.Date(2026, 11, 29, 22, 30, 0, 0, time.UTC))
+	cards[4].DueDate = at(time.Date(2026, 11, 30, 0, 0, 0, 0, berlin))
+
+	for due, want := range map[string][]string{
+		"overdue":   {"Late"},
+		"today":     {"Today"},
+		"this_week": {"Late", "Today", "Sunday"},
+		"none":      {"No date"},
+	} {
+		t.Run(due, func(t *testing.T) {
+			f := newCardsFixture(t)
+			f.svc.now = func() time.Time { return now }
+			f.serve(b)
+
+			got, _, err := f.svc.Search(t.Context(), SearchQuery{Board: "B1", Due: due})
+
+			require.NoError(t, err)
+			titles := make([]string, len(got))
+			for i, c := range got {
+				titles[i] = c.Title
+			}
+			assert.Equal(t, want, titles)
+		})
+	}
+}
+
+func TestSearchUnknownDueFilter(t *testing.T) {
+	f := newCardsFixture(t)
+
+	_, _, err := f.svc.Search(t.Context(), SearchQuery{Due: "tomorrow"})
+
+	require.EqualError(t, err, `unknown due "tomorrow": use overdue, today, this_week or none`)
+}

@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"net/url"
+	"strings"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -71,14 +73,33 @@ type deleteCardInput struct {
 	Board string `json:"board,omitempty" jsonschema:"board to look on when card is a title (ID, URL or name)"`
 }
 
-// writeOut is a card after a write. CreatedLabels names the labels the write had to create.
+// writeOut is a card after a write, with its web link. CreatedLabels names
+// the labels the write had to create.
 type writeOut struct {
-	Card          cardLine `json:"card"`
-	CreatedLabels []string `json:"created_labels,omitempty"`
+	Card          linkedCardLine `json:"card"`
+	CreatedLabels []string       `json:"created_labels,omitempty"`
 }
 
-func toWriteOut(r *service.WriteResult) writeOut {
-	return writeOut{Card: toCardLine(r.Card), CreatedLabels: r.CreatedLabels}
+// linkedCardLine is a card line with the card's web link.
+type linkedCardLine struct {
+	cardLine
+	URL string `json:"url,omitempty"`
+}
+
+func toWriteOut(r *service.WriteResult, links cardLinks) writeOut {
+	card := linkedCardLine{cardLine: toCardLine(r.Card), URL: links.url(r.Card.ID)}
+	return writeOut{Card: card, CreatedLabels: r.CreatedLabels}
+}
+
+// cardLinks is the address people open Planka at; url builds a card's web
+// link from it. An empty one makes no links.
+type cardLinks string
+
+func (b cardLinks) url(cardID string) string {
+	if b == "" || cardID == "" {
+		return ""
+	}
+	return strings.TrimRight(string(b), "/") + "/cards/" + url.PathEscape(cardID)
 }
 
 // zoneNote is appended to a due parameter's text, so the model knows the zone
@@ -88,7 +109,7 @@ func zoneNote(zone string) string {
 }
 
 // registerCardWriteTools adds the tools that create, change and delete cards.
-func registerCardWriteTools(server *mcp.Server, cards CardService, zone string) {
+func registerCardWriteTools(server *mcp.Server, cards CardService, zone string, links cardLinks) {
 	createSchema := inputSchema[createCardInput](map[string][]string{"position": service.Positions})
 	createSchema.Properties["due"].Description += zoneNote(zone)
 	updateSchema := inputSchema[updateCardInput](map[string][]string{"stopwatch": service.StopwatchActions})
@@ -98,29 +119,29 @@ func registerCardWriteTools(server *mcp.Server, cards CardService, zone string) 
 		Name:  "create_card",
 		Title: "Create card",
 		Description: "Use this to add a new card to a Planka list. " +
-			"Returns the new card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+			"Returns the new card as a compact line with its web url, plus created_labels when create_labels made labels the board lacked.",
 		Annotations: additive,
 		InputSchema: createSchema,
-	}, createCard(cards))
+	}, createCard(cards, links))
 
 	addTool(server, &mcp.Tool{
 		Name:  "move_card",
 		Title: "Move card",
 		Description: "Use this to change a Planka card's status by moving it to another list, or to the archive with list=archive. " +
-			"board only narrows the search for the card; to_board is the destination. Returns the card as a compact line.",
+			"board only narrows the search for the card; to_board is the destination. Returns the card as a compact line with its web url.",
 		Annotations: idempotent,
 		InputSchema: inputSchema[moveCardInput](map[string][]string{"position": service.Positions}),
-	}, moveCard(cards))
+	}, moveCard(cards, links))
 
 	addTool(server, &mcp.Tool{
 		Name:  "update_card",
 		Title: "Update card",
 		Description: "Use this to edit a Planka card's title, description, due date, labels, assignees or stopwatch; fields you leave out stay as they are, " +
 			"and description replaces the whole text, so read it with get_card first to append. " +
-			"Returns the card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+			"Returns the card as a compact line with its web url, plus created_labels when create_labels made labels the board lacked.",
 		Annotations: idempotent,
 		InputSchema: updateSchema,
-	}, updateCard(cards))
+	}, updateCard(cards, links))
 
 	addTool(server, &mcp.Tool{
 		Name:  "delete_card",
@@ -131,7 +152,7 @@ func registerCardWriteTools(server *mcp.Server, cards CardService, zone string) 
 	}, deleteCard(cards))
 }
 
-func createCard(cards CardService) func(context.Context, *mcp.CallToolRequest, createCardInput) (*mcp.CallToolResult, any, error) {
+func createCard(cards CardService, links cardLinks) func(context.Context, *mcp.CallToolRequest, createCardInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in createCardInput) (*mcp.CallToolResult, any, error) {
 		res, err := cards.Create(ctx, service.CreateCard{
 			Board: in.Board, List: in.List, Title: in.Title, Description: in.Description,
@@ -140,11 +161,11 @@ func createCard(cards CardService) func(context.Context, *mcp.CallToolRequest, c
 		if err != nil {
 			return errorResult(err)
 		}
-		return jsonResult(toWriteOut(res))
+		return jsonResult(toWriteOut(res, links))
 	}
 }
 
-func moveCard(cards CardService) func(context.Context, *mcp.CallToolRequest, moveCardInput) (*mcp.CallToolResult, any, error) {
+func moveCard(cards CardService, links cardLinks) func(context.Context, *mcp.CallToolRequest, moveCardInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in moveCardInput) (*mcp.CallToolResult, any, error) {
 		res, err := cards.Move(ctx, service.MoveCard{
 			Card: service.CardRef{Ref: in.Card, Board: in.Board}, List: in.List, ToBoard: in.ToBoard, Position: in.Position,
@@ -152,11 +173,11 @@ func moveCard(cards CardService) func(context.Context, *mcp.CallToolRequest, mov
 		if err != nil {
 			return errorResult(err)
 		}
-		return jsonResult(toWriteOut(res))
+		return jsonResult(toWriteOut(res, links))
 	}
 }
 
-func updateCard(cards CardService) func(context.Context, *mcp.CallToolRequest, updateCardInput) (*mcp.CallToolResult, any, error) {
+func updateCard(cards CardService, links cardLinks) func(context.Context, *mcp.CallToolRequest, updateCardInput) (*mcp.CallToolResult, any, error) {
 	return func(ctx context.Context, _ *mcp.CallToolRequest, in updateCardInput) (*mcp.CallToolResult, any, error) {
 		res, err := cards.Update(ctx, service.UpdateCard{
 			Card:  service.CardRef{Ref: in.Card, Board: in.Board},
@@ -168,7 +189,7 @@ func updateCard(cards CardService) func(context.Context, *mcp.CallToolRequest, u
 		if err != nil {
 			return errorResult(err)
 		}
-		return jsonResult(toWriteOut(res))
+		return jsonResult(toWriteOut(res, links))
 	}
 }
 

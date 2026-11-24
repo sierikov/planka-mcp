@@ -4,7 +4,7 @@
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Use this to edit a Planka card's title, description, due date, labels, assignees or stopwatch; fields you leave out stay as they are, and description replaces the whole text, so read it with get_card first to append. Returns the card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+  "description": "Use this to edit a Planka card's title, description, due date, labels, assignees or stopwatch; fields you leave out stay as they are, and description replaces the whole text, so read it with get_card first to append. Returns the card as a compact line with its web url, plus created_labels when create_labels made labels the board lacked.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {

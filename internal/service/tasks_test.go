@@ -33,8 +33,10 @@ func cardOf(lists []planka.TaskList, tasks ...planka.Task) *planka.CardResponse 
 	return r
 }
 
+// list is a checklist of card c1, shown on the front of the card as Planka's
+// default has it.
 func list(id, name string, pos float64) planka.TaskList {
-	return planka.TaskList{ID: id, CardID: "c1", Name: name, Position: pos}
+	return planka.TaskList{ID: id, CardID: "c1", Name: name, Position: pos, ShowOnFrontOfCard: true}
 }
 
 func task(id, listID, name string, pos float64, done bool) planka.Task {
@@ -63,7 +65,7 @@ func TestAddTasksCreatesTaskListWhenMissing(t *testing.T) {
 	f := newTasksFixture(t)
 	f.serveLocked(writeBoard())
 	f.readCard(cardOf(nil))
-	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", "Tasks", 65536.0).Return(&planka.TaskList{ID: "tl1", CardID: "c1", Name: "Tasks"}, nil).Once()
+	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", planka.CreateTaskListRequest{Name: "Tasks", Position: 65536.0}).Return(&planka.TaskList{ID: "tl1", CardID: "c1", Name: "Tasks"}, nil).Once()
 	f.created("tl1", planka.CreateTaskRequest{Position: 65536, Name: ptr("Write")})
 	f.created("tl1", planka.CreateTaskRequest{Position: 131072, Name: ptr("Test")})
 	f.readCard(cardOf([]planka.TaskList{list("tl1", "Tasks", 65536)},
@@ -81,7 +83,7 @@ func TestAddTasksNewNamedListGoesAtTheBottom(t *testing.T) {
 	f := newTasksFixture(t)
 	f.serveLocked(writeBoard())
 	f.readCard(cardOf([]planka.TaskList{list("tl1", "Tasks", 100), list("tl2", "Other", 300)}))
-	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", "Release", 300.0+65536).Return(&planka.TaskList{ID: "tl3", Name: "Release"}, nil).Once()
+	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", planka.CreateTaskListRequest{Name: "Release", Position: 300.0 + 65536}).Return(&planka.TaskList{ID: "tl3", Name: "Release"}, nil).Once()
 	f.created("tl3", planka.CreateTaskRequest{Position: 65536, Name: ptr("Tag")})
 	f.readCard(cardOf([]planka.TaskList{list("tl3", "Release", 300+65536)}, task("t1", "tl3", "Tag", 65536, false)))
 
@@ -118,7 +120,7 @@ func TestAddTasksDoesNotPrefixMatchTaskList(t *testing.T) {
 	f := newTasksFixture(t)
 	f.serveLocked(writeBoard())
 	f.readCard(cardOf([]planka.TaskList{list("tl1", "Release Steps", 131072)}))
-	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", "Release", 131072.0+65536).Return(&planka.TaskList{ID: "tl2", Name: "Release"}, nil).Once()
+	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", planka.CreateTaskListRequest{Name: "Release", Position: 131072.0 + 65536}).Return(&planka.TaskList{ID: "tl2", Name: "Release"}, nil).Once()
 	f.created("tl2", planka.CreateTaskRequest{Position: 65536, Name: ptr("Tag")})
 	f.readCard(cardOf([]planka.TaskList{list("tl1", "Release Steps", 131072), list("tl2", "Release", 196608)},
 		task("t1", "tl2", "Tag", 65536, false)))
@@ -373,7 +375,7 @@ func TestAddTasksListCreatedThenItemFailsSaysSo(t *testing.T) {
 	f := newTasksFixture(t)
 	f.serveLocked(writeBoard())
 	f.readCard(cardOf(nil))
-	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", "Tasks", 65536.0).Return(&planka.TaskList{ID: "tl1", Name: "Tasks"}, nil).Once()
+	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", planka.CreateTaskListRequest{Name: "Tasks", Position: 65536.0}).Return(&planka.TaskList{ID: "tl1", Name: "Tasks"}, nil).Once()
 	f.api.EXPECT().CreateTask(mock.Anything, "tl1", mock.Anything).Return(nil, errors.New("boom")).Once()
 
 	_, err := f.tasks.Add(t.Context(), alphaRef, "", []TaskInput{{Name: "a"}})
@@ -405,7 +407,7 @@ func TestUpdateTasksBatch(t *testing.T) {
 	f.api.EXPECT().UpdateTask(mock.Anything, "t3", planka.UpdateTaskRequest{Name: ptr("Three"), IsCompleted: ptr(false)}).
 		Return(&planka.Task{ID: "t3", LinkedCardID: ptr("c2"), Name: ptr("Three")}, nil).Once()
 
-	got, err := f.tasks.Update(t.Context(), []TaskUpdate{
+	got, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{
 		{ID: " t1 ", Completed: ptr(true)},
 		{ID: "t2\n", Name: ptr("  Two!\n")},
 		{ID: "t3", Name: ptr("Three"), Completed: ptr(false)},
@@ -428,10 +430,10 @@ func TestUpdateTasksValidatesEveryItemBeforeAnyWrite(t *testing.T) {
 		"nothing to do": {ID: "t2"},
 		"empty name":    {ID: "t2", Name: ptr(" ")},
 	} {
-		_, err := f.tasks.Update(t.Context(), []TaskUpdate{ok, bad})
+		_, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{ok, bad})
 		require.ErrorContains(t, err, "item 2", name)
 	}
-	_, err := f.tasks.Update(t.Context(), nil)
+	_, err := f.tasks.Update(t.Context(), CardRef{}, nil)
 	require.ErrorContains(t, err, "no items")
 }
 
@@ -440,7 +442,7 @@ func TestUpdateTasksPartialFailureSaysWhichWereApplied(t *testing.T) {
 	f.api.EXPECT().UpdateTask(mock.Anything, "t1", mock.Anything).Return(&planka.Task{ID: "t1"}, nil).Once()
 	f.api.EXPECT().UpdateTask(mock.Anything, "t2", mock.Anything).Return(nil, errors.New("boom")).Once()
 
-	_, err := f.tasks.Update(t.Context(), []TaskUpdate{
+	_, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{
 		{ID: "t1", Completed: ptr(true)}, {ID: "t2", Completed: ptr(true)}, {ID: "t3", Completed: ptr(true)},
 	})
 
@@ -453,7 +455,7 @@ func TestUpdateTasksFirstFailureIsNotAPartialApply(t *testing.T) {
 	f := newTasksFixture(t)
 	f.api.EXPECT().UpdateTask(mock.Anything, "t1", mock.Anything).Return(nil, &planka.APIError{Status: 404}).Once()
 
-	_, err := f.tasks.Update(t.Context(), []TaskUpdate{{ID: "t1", Completed: ptr(true)}})
+	_, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{{ID: "t1", Completed: ptr(true)}})
 
 	require.ErrorIs(t, err, ErrNotFound)
 	assert.NotContains(t, err.Error(), "applied")
@@ -463,7 +465,7 @@ func TestUpdateTasksExplainsARefusal(t *testing.T) {
 	f := newTasksFixture(t)
 	f.api.EXPECT().UpdateTask(mock.Anything, "t1", mock.Anything).Return(nil, &planka.APIError{Status: 403}).Once()
 
-	_, err := f.tasks.Update(t.Context(), []TaskUpdate{{ID: "t1", Completed: ptr(true)}})
+	_, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{{ID: "t1", Completed: ptr(true)}})
 
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "task t1")
@@ -478,7 +480,7 @@ func TestUpdateTasksExplainsARefusalAfterAPartialApply(t *testing.T) {
 	f.api.EXPECT().UpdateTask(mock.Anything, "t1", mock.Anything).Return(&planka.Task{ID: "t1"}, nil).Once()
 	f.api.EXPECT().UpdateTask(mock.Anything, "t2", mock.Anything).Return(nil, &planka.APIError{Status: 403}).Once()
 
-	_, err := f.tasks.Update(t.Context(), []TaskUpdate{{ID: "t1", Completed: ptr(true)}, {ID: "t2", Completed: ptr(true)}})
+	_, err := f.tasks.Update(t.Context(), CardRef{}, []TaskUpdate{{ID: "t1", Completed: ptr(true)}, {ID: "t2", Completed: ptr(true)}})
 
 	require.ErrorContains(t, err, "applied: t1")
 	assert.ErrorContains(t, err, "links a card")
@@ -488,6 +490,6 @@ func TestDeleteTask(t *testing.T) {
 	f := newTasksFixture(t)
 	f.api.EXPECT().DeleteTask(mock.Anything, "t1").Return(nil).Once()
 
-	require.NoError(t, f.tasks.Delete(t.Context(), " t1\n"))
-	require.ErrorContains(t, f.tasks.Delete(t.Context(), ""), "task ID is empty")
+	require.NoError(t, f.tasks.Delete(t.Context(), []string{" t1\n"}))
+	require.ErrorContains(t, f.tasks.Delete(t.Context(), []string{""}), "task ID is empty")
 }

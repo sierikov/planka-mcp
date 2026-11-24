@@ -33,11 +33,14 @@ type CommentService interface {
 	Delete(ctx context.Context, id string) error
 }
 
-// TaskService adds, changes and deletes checklist tasks.
+// TaskService adds, changes and deletes checklists and their tasks.
 type TaskService interface {
 	Add(ctx context.Context, ref service.CardRef, taskList string, items []service.TaskInput) (*service.TaskList, error)
-	Update(ctx context.Context, items []service.TaskUpdate) ([]service.Task, error)
-	Delete(ctx context.Context, id string) error
+	Update(ctx context.Context, card service.CardRef, items []service.TaskUpdate) ([]service.Task, error)
+	Delete(ctx context.Context, ids []string) error
+	CreateChecklist(ctx context.Context, in service.CreateChecklist) (*service.ChecklistResult, error)
+	UpdateChecklist(ctx context.Context, in service.UpdateChecklist) (*service.ChecklistResult, error)
+	DeleteChecklist(ctx context.Context, card service.CardRef, checklist string, withTasks bool) (*service.DeletedChecklist, error)
 }
 
 // ListService adds, changes and deletes the lists (columns) of a board.
@@ -54,4 +57,7 @@ type Deps struct {
 	Comments CommentService
 	Tasks    TaskService
 	Lists    ListService
+
+	// PublicURL is the base of the card links in results ("" leaves them out).
+	PublicURL string
 }

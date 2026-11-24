@@ -222,13 +222,37 @@ func TestDeleteComment(t *testing.T) {
 func TestCreateTaskList(t *testing.T) {
 	c, srv := newTestClient(t, map[string]any{"POST /api/cards/c1/task-lists": plankatest.Fixture(t, "task_list_created")})
 
-	tl, err := c.CreateTaskList(t.Context(), "c1", "Scratch tasks", 65536)
+	tl, err := c.CreateTaskList(t.Context(), "c1", CreateTaskListRequest{Position: 65536, Name: "Scratch tasks"})
 
 	require.NoError(t, err)
 	assert.Equal(t, "Scratch tasks", tl.Name)
 	assert.Equal(t, http.MethodPost, srv.Last().Method)
 	assert.Equal(t, "/api/cards/c1/task-lists", srv.Last().Path)
-	assert.JSONEq(t, `{"position":65536,"name":"Scratch tasks"}`, string(srv.Last().Body))
+	assert.JSONEq(t, `{"position":65536,"name":"Scratch tasks"}`, string(srv.Last().Body), "unset display options take Planka's defaults")
+
+	_, err = c.CreateTaskList(t.Context(), "c1", CreateTaskListRequest{Position: 1, Name: "Steps", ShowOnFrontOfCard: new(false), HideCompletedTasks: new(true)})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"position":1,"name":"Steps","showOnFrontOfCard":false,"hideCompletedTasks":true}`, string(srv.Last().Body))
+}
+
+func TestUpdateTaskListSendsOnlySetFields(t *testing.T) {
+	c, srv := newTestClient(t, map[string]any{"PATCH /api/task-lists/tl1": plankatest.Fixture(t, "task_list_created")})
+
+	_, err := c.UpdateTaskList(t.Context(), "tl1", UpdateTaskListRequest{Name: Some("Steps"), HideCompletedTasks: Some(true)})
+
+	require.NoError(t, err)
+	assert.Equal(t, http.MethodPatch, srv.Last().Method)
+	assert.Equal(t, "/api/task-lists/tl1", srv.Last().Path)
+	assert.JSONEq(t, `{"name":"Steps","hideCompletedTasks":true}`, string(srv.Last().Body))
+}
+
+func TestDeleteTaskList(t *testing.T) {
+	c, srv := newTestClient(t, map[string]any{"DELETE /api/task-lists/tl1": plankatest.Fixture(t, "task_list_created")})
+
+	require.NoError(t, c.DeleteTaskList(t.Context(), "tl1"))
+
+	assert.Equal(t, http.MethodDelete, srv.Last().Method)
+	assert.Equal(t, "/api/task-lists/tl1", srv.Last().Path)
 }
 
 func TestCreateTask(t *testing.T) {
@@ -272,6 +296,18 @@ func TestUpdateTaskOmitsUnsetFields(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"isCompleted":false}`, string(srv.Last().Body))
+}
+
+func TestUpdateTaskMovesAndAssigns(t *testing.T) {
+	c, srv := newTestClient(t, map[string]any{"PATCH /api/tasks/t1": plankatest.Fixture(t, "task_updated")})
+
+	_, err := c.UpdateTask(t.Context(), "t1", UpdateTaskRequest{TaskListID: new("tl2"), Position: new(98304.0), AssigneeUserID: Some("u1")})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"taskListId":"tl2","position":98304,"assigneeUserId":"u1"}`, string(srv.Last().Body))
+
+	_, err = c.UpdateTask(t.Context(), "t1", UpdateTaskRequest{AssigneeUserID: Null[string]()})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"assigneeUserId":null}`, string(srv.Last().Body), "a null assignee removes it")
 }
 
 func TestDeleteTask(t *testing.T) {

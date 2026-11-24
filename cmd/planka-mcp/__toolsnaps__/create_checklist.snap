@@ -1,0 +1,55 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add an empty checklist to a Planka card, placed after or before another checklist, or last. To add tasks, use add_tasks, which also creates a checklist it does not find. Returns the checklist (id, name, display options, tasks_total) and checklist_order, the card's checklist names in order.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "after": {
+        "description": "put it right after this checklist (exact name or ID); without after or before it goes last",
+        "type": "string"
+      },
+      "before": {
+        "description": "put it right before this checklist (exact name or ID)",
+        "type": "string"
+      },
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "hide_completed_tasks": {
+        "description": "hide its ticked tasks (default false)",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "name": {
+        "description": "the new checklist's name; it must differ from the card's other checklists",
+        "type": "string"
+      },
+      "show_on_front_of_card": {
+        "description": "show the checklist on the card in the board view (default true)",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      }
+    },
+    "required": [
+      "card",
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "create_checklist",
+  "title": "Create checklist"
+}

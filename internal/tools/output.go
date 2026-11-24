@@ -63,6 +63,7 @@ type listOut struct {
 // cardOut is the full card, as get_card returns it.
 type cardOut struct {
 	cardLine
+	URL          string                `json:"url,omitempty"`
 	Project      string                `json:"project,omitempty"`
 	Type         string                `json:"type,omitempty"`
 	Description  string                `json:"description,omitempty"`
@@ -98,16 +99,26 @@ type attachmentOut struct {
 	URL  string `json:"url"`
 }
 
+// taskListOut is a checklist. Its display options show only where they
+// differ from Planka's defaults: show_on_front_of_card false, or
+// hide_completed_tasks true.
 type taskListOut struct {
-	Name  string    `json:"name"`
-	Tasks []taskOut `json:"tasks,omitempty"`
+	ID                 string    `json:"id"`
+	Name               string    `json:"name"`
+	ShowOnFrontOfCard  *bool     `json:"show_on_front_of_card,omitempty"`
+	HideCompletedTasks bool      `json:"hide_completed_tasks,omitempty"`
+	Tasks              []taskOut `json:"tasks,omitempty"`
 }
 
+// taskOut is a task. Checklist is set only where the result does not group
+// the tasks by checklist (update_tasks).
 type taskOut struct {
-	ID   string    `json:"id"`
-	Name string    `json:"name"`
-	Done bool      `json:"done,omitempty"`
-	Link *cardLine `json:"link,omitempty"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	Done      bool      `json:"done,omitempty"`
+	Checklist string    `json:"checklist,omitempty"`
+	Assignee  string    `json:"assignee,omitempty"`
+	Link      *cardLine `json:"link,omitempty"`
 }
 
 // searchOut is a page of search results. More counts the matches the limit
@@ -246,7 +257,7 @@ func fitComments(comments []commentOut, chars int) []commentOut {
 }
 
 func toTaskOut(t service.Task) taskOut {
-	out := taskOut{ID: t.ID, Name: t.Name, Done: t.Completed}
+	out := taskOut{ID: t.ID, Name: t.Name, Done: t.Completed, Checklist: t.Checklist, Assignee: t.Assignee}
 	if t.Linked != nil {
 		link := toCardLine(*t.Linked)
 		out.Link = &link
@@ -255,7 +266,10 @@ func toTaskOut(t service.Task) taskOut {
 }
 
 func toTaskListOut(tl service.TaskList) taskListOut {
-	out := taskListOut{Name: tl.Name}
+	out := taskListOut{ID: tl.ID, Name: tl.Name, HideCompletedTasks: tl.HideCompletedTasks}
+	if !tl.ShowOnFrontOfCard {
+		out.ShowOnFrontOfCard = new(false)
+	}
 	for _, t := range tl.Tasks {
 		out.Tasks = append(out.Tasks, toTaskOut(t))
 	}

@@ -61,10 +61,13 @@ func TestCardOutShape(t *testing.T) {
 		CardSummary: service.CardSummary{ID: "1", Title: "T", Board: "B", List: "L", CommentsTotal: 1},
 		Project:     "P", Type: "project", Description: "desc",
 		Stopwatch: &service.Stopwatch{Total: 90 * time.Minute, Running: true},
-		TaskLists: []service.TaskList{{Name: "Tasks", Tasks: []service.Task{
-			{ID: "t1", Name: "a", Completed: true},
-			{ID: "t2", Name: "b", Linked: &service.CardSummary{ID: "9", Title: "Child", List: "Open"}},
-		}}},
+		TaskLists: []service.TaskList{
+			{ID: "tl1", Name: "Tasks", ShowOnFrontOfCard: true, Tasks: []service.Task{
+				{ID: "t1", Name: "a", Completed: true, Assignee: "Ann"},
+				{ID: "t2", Name: "b", Linked: &service.CardSummary{ID: "9", Title: "Child", List: "Open"}},
+			}},
+			{ID: "tl2", Name: "Later", HideCompletedTasks: true},
+		},
 		Attachments: []service.Attachment{{Name: "f.txt", URL: "http://x/f.txt"}},
 		CustomFields: []service.CustomFieldGroup{
 			{Name: "Meta", Fields: []service.CustomField{{Name: "Size", Value: "L", ShowOnFrontOfCard: true}, {Name: "Note", Value: "a, b"}}},
@@ -76,8 +79,9 @@ func TestCardOutShape(t *testing.T) {
 	require.NoError(t, err)
 	assert.JSONEq(t, `{"id":"1","title":"T","board":"B","list":"L","project":"P","type":"project","description":"desc",
 		"stopwatch":"1h 30m (running)",
-		"task_lists":[{"name":"Tasks","tasks":[{"id":"t1","name":"a","done":true},
-			{"id":"t2","name":"b","link":{"id":"9","title":"Child","list":"Open"}}]}],
+		"task_lists":[{"id":"tl1","name":"Tasks","tasks":[{"id":"t1","name":"a","done":true,"assignee":"Ann"},
+			{"id":"t2","name":"b","link":{"id":"9","title":"Child","list":"Open"}}]},
+			{"id":"tl2","name":"Later","show_on_front_of_card":false,"hide_completed_tasks":true}],
 		"attachments":[{"name":"f.txt","url":"http://x/f.txt"}],
 		"custom_fields":[
 			{"group":"Meta","fields":[{"name":"Size","value":"L","show_on_front_of_card":true},{"name":"Note","value":"a, b"}]},

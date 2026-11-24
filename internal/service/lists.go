@@ -46,8 +46,9 @@ func NewLists(cards *Cards, api ListsAPI) *Lists {
 	return &Lists{cards: cards, api: api}
 }
 
-// ListPlace puts a list right after or right before another list, given by ID
-// or exact name. With both empty a new list goes last and a moved one stays.
+// ListPlace puts a list (or a checklist) right after or right before another
+// one, given by ID or exact name. With both empty a new one goes last and a
+// moved one stays.
 type ListPlace struct {
 	After, Before string
 }

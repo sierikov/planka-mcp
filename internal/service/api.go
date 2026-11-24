@@ -70,9 +70,11 @@ type ListsAPI interface {
 	MoveListCards(ctx context.Context, id, toListID string) ([]planka.Card, error)
 }
 
-// TasksAPI creates task lists, and creates, changes and deletes tasks.
+// TasksAPI creates, changes and deletes task lists (checklists) and tasks.
 type TasksAPI interface {
-	CreateTaskList(ctx context.Context, cardID, name string, position float64) (*planka.TaskList, error)
+	CreateTaskList(ctx context.Context, cardID string, r planka.CreateTaskListRequest) (*planka.TaskList, error)
+	UpdateTaskList(ctx context.Context, id string, r planka.UpdateTaskListRequest) (*planka.TaskList, error)
+	DeleteTaskList(ctx context.Context, id string) error
 	CreateTask(ctx context.Context, taskListID string, r planka.CreateTaskRequest) (*planka.Task, error)
 	UpdateTask(ctx context.Context, id string, r planka.UpdateTaskRequest) (*planka.Task, error)
 	DeleteTask(ctx context.Context, id string) error

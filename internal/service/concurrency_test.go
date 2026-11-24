@@ -129,11 +129,11 @@ func (c *fakeCard) read(context.Context, string) (*planka.CardResponse, error) {
 	return cardOf(slices.Clone(c.lists), slices.Clone(c.tasks)...), nil
 }
 
-func (c *fakeCard) createTaskList(_ context.Context, cardID, name string, pos float64) (*planka.TaskList, error) {
+func (c *fakeCard) createTaskList(_ context.Context, cardID string, r planka.CreateTaskListRequest) (*planka.TaskList, error) {
 	c.gate.wait()
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	tl := planka.TaskList{ID: fmt.Sprintf("tl%d", len(c.lists)), CardID: cardID, Name: name, Position: pos}
+	tl := planka.TaskList{ID: fmt.Sprintf("tl%d", len(c.lists)), CardID: cardID, Name: r.Name, Position: r.Position}
 	c.lists = append(c.lists, tl)
 	return &tl, nil
 }
@@ -152,7 +152,7 @@ func TestAddTasksConcurrentCallsCreateOneChecklist(t *testing.T) {
 	f.projects.EXPECT().Projects(mock.Anything).Return(synthProjects(), nil)
 	f.boards.EXPECT().Board(mock.Anything, "b1").Return(writeBoard(), nil)
 	f.cards.EXPECT().Card(mock.Anything, "c1").RunAndReturn(card.read)
-	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", "Tasks", mock.Anything).RunAndReturn(card.createTaskList)
+	f.api.EXPECT().CreateTaskList(mock.Anything, "c1", mock.Anything).RunAndReturn(card.createTaskList)
 	f.api.EXPECT().CreateTask(mock.Anything, mock.Anything, mock.Anything).RunAndReturn(card.createTask)
 
 	var wg sync.WaitGroup

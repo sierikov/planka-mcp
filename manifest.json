@@ -82,11 +82,11 @@
     },
     {
       "name": "update_tasks",
-      "description": "Tick, untick or rename checklist tasks"
+      "description": "Tick, untick, rename, reorder or assign checklist tasks, or move them to another checklist"
     },
     {
       "name": "delete_task",
-      "description": "Delete a checklist task"
+      "description": "Delete one or several checklist tasks"
     },
     {
       "name": "create_list",
@@ -99,6 +99,18 @@
     {
       "name": "delete_list",
       "description": "Delete a list; Planka moves its cards to the board's Trash"
+    },
+    {
+      "name": "create_checklist",
+      "description": "Add a checklist to a card, placed after or before another"
+    },
+    {
+      "name": "update_checklist",
+      "description": "Rename or reorder a checklist, or change how it shows"
+    },
+    {
+      "name": "delete_checklist",
+      "description": "Delete a checklist and, when told to, the tasks in it"
     }
   ],
   "user_config": {

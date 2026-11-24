@@ -14,6 +14,10 @@ import (
 type Config struct {
 	// URL is the base URL of the Planka instance.
 	URL string
+	// PublicURL is the address people open Planka at, for the card links in
+	// tool results. It defaults to URL, which in http mode is often an
+	// internal address.
+	PublicURL string
 	// APIKey is the Planka API key; it is used in stdio mode only.
 	APIKey string
 	// Username and Password log in to Planka instead of an API key (stdio mode
@@ -38,9 +42,10 @@ const (
 func loadConfig(args []string, getenv func(string) string) (Config, error) {
 	getenv = withoutPlaceholders(getenv)
 	cfg := Config{
-		URL:      getenv("PLANKA_URL"),
-		APIKey:   strings.TrimSpace(getenv("PLANKA_API_KEY")),
-		Username: strings.TrimSpace(getenv("PLANKA_USERNAME")),
+		URL:       getenv("PLANKA_URL"),
+		PublicURL: strings.TrimSpace(getenv("PLANKA_PUBLIC_URL")),
+		APIKey:    strings.TrimSpace(getenv("PLANKA_API_KEY")),
+		Username:  strings.TrimSpace(getenv("PLANKA_USERNAME")),
 		// A password may start or end with spaces; only the line ending a secret
 		// file usually adds is dropped.
 		Password:  strings.TrimRight(getenv("PLANKA_PASSWORD"), "\r\n"),
@@ -69,7 +74,12 @@ func loadConfig(args []string, getenv func(string) string) (Config, error) {
 	if cfg.URL == "" {
 		return Config{}, errors.New("PLANKA_URL is required (or pass -url)")
 	}
-	if err := checkURL(cfg.URL); err != nil {
+	if err := checkURL("PLANKA_URL", cfg.URL); err != nil {
+		return Config{}, err
+	}
+	if cfg.PublicURL == "" {
+		cfg.PublicURL = cfg.URL
+	} else if err := checkURL("PLANKA_PUBLIC_URL", cfg.PublicURL); err != nil {
 		return Config{}, err
 	}
 	if err := checkAuth(&cfg); err != nil {
@@ -88,12 +98,13 @@ func newFlags(cfg *Config) *flag.FlagSet {
 	return fs
 }
 
-// checkURL requires an http or https URL with a host, so that a value such as
-// "planka.example.com" fails at startup instead of on every tool call.
-func checkURL(raw string) error {
+// checkURL requires the setting name to be an http or https URL with a host,
+// so that a value such as "planka.example.com" fails at startup instead of on
+// every tool call.
+func checkURL(name, raw string) error {
 	u, err := url.Parse(raw)
 	if err != nil || (u.Scheme != "http" && u.Scheme != "https") || u.Host == "" {
-		return fmt.Errorf("PLANKA_URL %q is not an http(s) URL: use the address you open Planka at, such as https://planka.example.com", raw)
+		return fmt.Errorf("%s %q is not an http(s) URL: use the address you open Planka at, such as https://planka.example.com", name, raw)
 	}
 	return nil
 }

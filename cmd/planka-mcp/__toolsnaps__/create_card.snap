@@ -5,7 +5,7 @@
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Use this to add a new card to a Planka list. Returns the new card as a compact line, plus created_labels when create_labels made labels the board lacked.",
+  "description": "Use this to add a new card to a Planka list. Returns the new card as a compact line with its web url, plus created_labels when create_labels made labels the board lacked.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {

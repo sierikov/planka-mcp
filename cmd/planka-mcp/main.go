@@ -35,6 +35,9 @@ Flags (each overrides its environment variable):
   -transport MODE      stdio (default) or http (PLANKA_MCP_TRANSPORT)
   -addr ADDRESS        listen address in http mode (PLANKA_MCP_ADDR, default :8080)
 
+PLANKA_PUBLIC_URL is the address people open Planka at, for card links in
+results, when it differs from PLANKA_URL (default: PLANKA_URL).
+
 Credentials, stdio mode only:
   PLANKA_API_KEY                     your Planka API key
   PLANKA_USERNAME, PLANKA_PASSWORD   log in instead, for users without an API key
@@ -93,8 +96,9 @@ func command(args []string, stdout io.Writer) (code int, ok bool) {
 	return 0, true
 }
 
-// newDeps wires the services on a Planka client.
-func newDeps(c *planka.Client) tools.Deps {
+// newDeps wires the services on a Planka client. publicURL is the base of the
+// card links in tool results.
+func newDeps(c *planka.Client, publicURL string) tools.Deps {
 	catalog := service.NewCatalog(c, c)
 	cards := service.NewCards(catalog, c, c, c, c, c, c, c)
 	return tools.Deps{
@@ -103,6 +107,8 @@ func newDeps(c *planka.Client) tools.Deps {
 		Comments: service.NewComments(cards, c),
 		Tasks:    service.NewTasks(cards, c),
 		Lists:    service.NewLists(cards, c),
+
+		PublicURL: publicURL,
 	}
 }
 
@@ -112,7 +118,7 @@ func run(ctx context.Context, cfg Config, stdin io.Reader, stdout io.Writer) err
 	case transportStdio:
 		client := planka.NewClient(cfg.URL, stdioAuth(cfg))
 		defer logout(ctx, client)
-		server := tools.NewServer(newDeps(client), buildVersion())
+		server := tools.NewServer(newDeps(client, cfg.PublicURL), buildVersion())
 		// The SDK closes the reader when ctx ends, which is what unblocks a read on an idle
 		// stdin, so a closable reader must keep its Close. Stdout is never closed.
 		reader, ok := stdin.(io.ReadCloser)
@@ -161,7 +167,7 @@ func logout(ctx context.Context, client *planka.Client) {
 // every request: each carries its own key in its context.
 func runHTTP(ctx context.Context, cfg Config, ln net.Listener) error {
 	client := planka.NewClient(cfg.URL)
-	server := tools.NewServer(newDeps(client), buildVersion())
+	server := tools.NewServer(newDeps(client, cfg.PublicURL), buildVersion())
 	logger := slog.Default() // main installs its stderr logger as the default
 	return serveHTTP(ctx, ln, newHTTPHandler(server, logger), logger)
 }

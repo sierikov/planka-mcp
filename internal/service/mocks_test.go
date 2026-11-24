@@ -1898,8 +1898,8 @@ func (_c *MockTasksAPI_CreateTask_Call) RunAndReturn(run func(ctx context.Contex
 }
 
 // CreateTaskList provides a mock function for the type MockTasksAPI
-func (_mock *MockTasksAPI) CreateTaskList(ctx context.Context, cardID string, name string, position float64) (*planka.TaskList, error) {
-	ret := _mock.Called(ctx, cardID, name, position)
+func (_mock *MockTasksAPI) CreateTaskList(ctx context.Context, cardID string, r planka.CreateTaskListRequest) (*planka.TaskList, error) {
+	ret := _mock.Called(ctx, cardID, r)
 
 	if len(ret) == 0 {
 		panic("no return value specified for CreateTaskList")
@@ -1907,18 +1907,18 @@ func (_mock *MockTasksAPI) CreateTaskList(ctx context.Context, cardID string, na
 
 	var r0 *planka.TaskList
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, float64) (*planka.TaskList, error)); ok {
-		return returnFunc(ctx, cardID, name, position)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, planka.CreateTaskListRequest) (*planka.TaskList, error)); ok {
+		return returnFunc(ctx, cardID, r)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string, string, float64) *planka.TaskList); ok {
-		r0 = returnFunc(ctx, cardID, name, position)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, planka.CreateTaskListRequest) *planka.TaskList); ok {
+		r0 = returnFunc(ctx, cardID, r)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).(*planka.TaskList)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, string, string, float64) error); ok {
-		r1 = returnFunc(ctx, cardID, name, position)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, planka.CreateTaskListRequest) error); ok {
+		r1 = returnFunc(ctx, cardID, r)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1933,13 +1933,12 @@ type MockTasksAPI_CreateTaskList_Call struct {
 // CreateTaskList is a helper method to define mock.On call
 //   - ctx context.Context
 //   - cardID string
-//   - name string
-//   - position float64
-func (_e *MockTasksAPI_Expecter) CreateTaskList(ctx interface{}, cardID interface{}, name interface{}, position interface{}) *MockTasksAPI_CreateTaskList_Call {
-	return &MockTasksAPI_CreateTaskList_Call{Call: _e.mock.On("CreateTaskList", ctx, cardID, name, position)}
+//   - r planka.CreateTaskListRequest
+func (_e *MockTasksAPI_Expecter) CreateTaskList(ctx interface{}, cardID interface{}, r interface{}) *MockTasksAPI_CreateTaskList_Call {
+	return &MockTasksAPI_CreateTaskList_Call{Call: _e.mock.On("CreateTaskList", ctx, cardID, r)}
 }
 
-func (_c *MockTasksAPI_CreateTaskList_Call) Run(run func(ctx context.Context, cardID string, name string, position float64)) *MockTasksAPI_CreateTaskList_Call {
+func (_c *MockTasksAPI_CreateTaskList_Call) Run(run func(ctx context.Context, cardID string, r planka.CreateTaskListRequest)) *MockTasksAPI_CreateTaskList_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
@@ -1949,19 +1948,14 @@ func (_c *MockTasksAPI_CreateTaskList_Call) Run(run func(ctx context.Context, ca
 		if args[1] != nil {
 			arg1 = args[1].(string)
 		}
-		var arg2 string
+		var arg2 planka.CreateTaskListRequest
 		if args[2] != nil {
-			arg2 = args[2].(string)
-		}
-		var arg3 float64
-		if args[3] != nil {
-			arg3 = args[3].(float64)
+			arg2 = args[2].(planka.CreateTaskListRequest)
 		}
 		run(
 			arg0,
 			arg1,
 			arg2,
-			arg3,
 		)
 	})
 	return _c
@@ -1972,7 +1966,7 @@ func (_c *MockTasksAPI_CreateTaskList_Call) Return(taskList *planka.TaskList, er
 	return _c
 }
 
-func (_c *MockTasksAPI_CreateTaskList_Call) RunAndReturn(run func(ctx context.Context, cardID string, name string, position float64) (*planka.TaskList, error)) *MockTasksAPI_CreateTaskList_Call {
+func (_c *MockTasksAPI_CreateTaskList_Call) RunAndReturn(run func(ctx context.Context, cardID string, r planka.CreateTaskListRequest) (*planka.TaskList, error)) *MockTasksAPI_CreateTaskList_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2030,6 +2024,63 @@ func (_c *MockTasksAPI_DeleteTask_Call) Return(err error) *MockTasksAPI_DeleteTa
 }
 
 func (_c *MockTasksAPI_DeleteTask_Call) RunAndReturn(run func(ctx context.Context, id string) error) *MockTasksAPI_DeleteTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteTaskList provides a mock function for the type MockTasksAPI
+func (_mock *MockTasksAPI) DeleteTaskList(ctx context.Context, id string) error {
+	ret := _mock.Called(ctx, id)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteTaskList")
+	}
+
+	var r0 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
+		r0 = returnFunc(ctx, id)
+	} else {
+		r0 = ret.Error(0)
+	}
+	return r0
+}
+
+// MockTasksAPI_DeleteTaskList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteTaskList'
+type MockTasksAPI_DeleteTaskList_Call struct {
+	*mock.Call
+}
+
+// DeleteTaskList is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+func (_e *MockTasksAPI_Expecter) DeleteTaskList(ctx interface{}, id interface{}) *MockTasksAPI_DeleteTaskList_Call {
+	return &MockTasksAPI_DeleteTaskList_Call{Call: _e.mock.On("DeleteTaskList", ctx, id)}
+}
+
+func (_c *MockTasksAPI_DeleteTaskList_Call) Run(run func(ctx context.Context, id string)) *MockTasksAPI_DeleteTaskList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTasksAPI_DeleteTaskList_Call) Return(err error) *MockTasksAPI_DeleteTaskList_Call {
+	_c.Call.Return(err)
+	return _c
+}
+
+func (_c *MockTasksAPI_DeleteTaskList_Call) RunAndReturn(run func(ctx context.Context, id string) error) *MockTasksAPI_DeleteTaskList_Call {
 	_c.Call.Return(run)
 	return _c
 }
@@ -2104,6 +2155,80 @@ func (_c *MockTasksAPI_UpdateTask_Call) Return(task *planka.Task, err error) *Mo
 }
 
 func (_c *MockTasksAPI_UpdateTask_Call) RunAndReturn(run func(ctx context.Context, id string, r planka.UpdateTaskRequest) (*planka.Task, error)) *MockTasksAPI_UpdateTask_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateTaskList provides a mock function for the type MockTasksAPI
+func (_mock *MockTasksAPI) UpdateTaskList(ctx context.Context, id string, r planka.UpdateTaskListRequest) (*planka.TaskList, error) {
+	ret := _mock.Called(ctx, id, r)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateTaskList")
+	}
+
+	var r0 *planka.TaskList
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, planka.UpdateTaskListRequest) (*planka.TaskList, error)); ok {
+		return returnFunc(ctx, id, r)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, string, planka.UpdateTaskListRequest) *planka.TaskList); ok {
+		r0 = returnFunc(ctx, id, r)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*planka.TaskList)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, string, planka.UpdateTaskListRequest) error); ok {
+		r1 = returnFunc(ctx, id, r)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTasksAPI_UpdateTaskList_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateTaskList'
+type MockTasksAPI_UpdateTaskList_Call struct {
+	*mock.Call
+}
+
+// UpdateTaskList is a helper method to define mock.On call
+//   - ctx context.Context
+//   - id string
+//   - r planka.UpdateTaskListRequest
+func (_e *MockTasksAPI_Expecter) UpdateTaskList(ctx interface{}, id interface{}, r interface{}) *MockTasksAPI_UpdateTaskList_Call {
+	return &MockTasksAPI_UpdateTaskList_Call{Call: _e.mock.On("UpdateTaskList", ctx, id, r)}
+}
+
+func (_c *MockTasksAPI_UpdateTaskList_Call) Run(run func(ctx context.Context, id string, r planka.UpdateTaskListRequest)) *MockTasksAPI_UpdateTaskList_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 string
+		if args[1] != nil {
+			arg1 = args[1].(string)
+		}
+		var arg2 planka.UpdateTaskListRequest
+		if args[2] != nil {
+			arg2 = args[2].(planka.UpdateTaskListRequest)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTasksAPI_UpdateTaskList_Call) Return(taskList *planka.TaskList, err error) *MockTasksAPI_UpdateTaskList_Call {
+	_c.Call.Return(taskList, err)
+	return _c
+}
+
+func (_c *MockTasksAPI_UpdateTaskList_Call) RunAndReturn(run func(ctx context.Context, id string, r planka.UpdateTaskListRequest) (*planka.TaskList, error)) *MockTasksAPI_UpdateTaskList_Call {
 	_c.Call.Return(run)
 	return _c
 }

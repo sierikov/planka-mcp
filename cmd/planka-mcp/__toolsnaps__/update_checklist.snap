@@ -1,0 +1,61 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to rename or reorder a checklist on a Planka card, or to change whether it shows on the card and hides ticked tasks. Fields you leave out stay as they are. To move tasks between checklists, use update_tasks. Returns the checklist and checklist_order.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "after": {
+        "description": "move it right after this checklist (exact name or ID)",
+        "type": "string"
+      },
+      "before": {
+        "description": "move it right before this checklist (exact name or ID)",
+        "type": "string"
+      },
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "checklist": {
+        "description": "the checklist to change, by exact name or ID",
+        "type": "string"
+      },
+      "hide_completed_tasks": {
+        "description": "hide its ticked tasks",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "name": {
+        "description": "new name",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "show_on_front_of_card": {
+        "description": "show the checklist on the card in the board view",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      }
+    },
+    "required": [
+      "card",
+      "checklist"
+    ],
+    "type": "object"
+  },
+  "name": "update_checklist",
+  "title": "Update checklist"
+}

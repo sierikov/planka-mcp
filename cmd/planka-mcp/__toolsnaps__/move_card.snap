@@ -4,7 +4,7 @@
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Use this to change a Planka card's status by moving it to another list, or to the archive with list=archive. board only narrows the search for the card; to_board is the destination. Returns the card as a compact line.",
+  "description": "Use this to change a Planka card's status by moving it to another list, or to the archive with list=archive. board only narrows the search for the card; to_board is the destination. Returns the card as a compact line with its web url.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {

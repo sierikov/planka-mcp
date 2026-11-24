@@ -4,15 +4,42 @@
     "openWorldHint": false,
     "readOnlyHint": false
   },
-  "description": "Use this to tick, untick or rename tasks on Planka cards, several in one call. A task that links a card cannot be changed: Planka ticks it when that card moves to a closed list such as Done. Returns the changed tasks.",
+  "description": "Use this to tick, untick, rename, reorder or assign tasks on a Planka card, or move them to another checklist of the same card, several in one call (give card to move, reorder or assign). A task that links a card can only be moved or reordered: Planka ticks it when that card moves to a closed list such as Done. Returns the changed tasks, with their checklist when card is given.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "the card the tasks are on (ID, URL or title); needed to move, reorder or assign tasks",
+        "type": "string"
+      },
       "items": {
-        "description": "tasks to change; each has a task_id and a completed or name",
+        "description": "tasks to change, applied in order; each has a task_id and at least one change",
         "items": {
           "additionalProperties": false,
           "properties": {
+            "after": {
+              "description": "put the task right after this task (ID) of its checklist",
+              "type": "string"
+            },
+            "assignee": {
+              "description": "assign the task to a board member by name, or me; an empty string removes the assignee",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "before": {
+              "description": "put the task right before this task (ID) of its checklist",
+              "type": "string"
+            },
+            "checklist": {
+              "description": "move the task to this checklist of the same card (exact name or ID); it keeps its id and done state, and goes to the bottom unless position, after or before says otherwise",
+              "type": "string"
+            },
             "completed": {
               "description": "tick (true) or untick (false) the task",
               "type": [
@@ -26,6 +53,14 @@
                 "null",
                 "string"
               ]
+            },
+            "position": {
+              "description": "top or bottom of its checklist",
+              "enum": [
+                "top",
+                "bottom"
+              ],
+              "type": "string"
             },
             "task_id": {
               "description": "ID of the task, from get_card",

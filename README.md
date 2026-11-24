@@ -30,7 +30,7 @@ What makes this server different from the other Planka MCP servers:
 
 ## Tools
 
-18 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
+21 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`, `create_checklist`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
 
 | Tool | What it does | Kind |
 |---|---|---|
@@ -45,13 +45,16 @@ What makes this server different from the other Planka MCP servers:
 | `add_comment` | Comment on a card | write |
 | `update_comment` | Edit the text of a comment | write (idempotent) |
 | `add_tasks` | Append tasks, or links to other cards, to a checklist (created if missing); many per call | write |
-| `update_tasks` | Tick, untick or rename tasks, several in one call | write (idempotent) |
+| `update_tasks` | Tick, untick, rename, reorder or assign tasks, or move them to another checklist of the same card, several in one call | write (idempotent) |
 | `delete_card` | Delete a card. **Permanent**: it does not go to Planka's trash; use `move_card` with `list=archive` to keep it | destructive |
 | `delete_comment` | Delete a comment | destructive |
-| `delete_task` | Delete a checklist task | destructive |
+| `delete_task` | Delete one checklist task, or several with `task_ids` | destructive |
 | `create_list` | Add a list (a column) to a board, last or right after or before another one; `closed` makes it a done list, `color` picks one of Planka's ten colours | write |
 | `update_list` | Rename, recolour or move a list, make it closed or active, sort its cards by name, due date or creation date, or archive every card in a closed list | write (idempotent) |
 | `delete_list` | Delete a list. Planka moves its cards to the board's Trash, where they can be restored | destructive |
+| `create_checklist` | Add a checklist to a card, after or before another one, or last; it can hide ticked tasks or stay off the card's front | write |
+| `update_checklist` | Rename or reorder a checklist, or change how it shows | write (idempotent) |
+| `delete_checklist` | Delete a checklist. **Its tasks go with it, for good**: a checklist with tasks needs `with_tasks=true`, and the result lists the deleted tasks | destructive |
 
 Your MCP client decides how to confirm writes. The split lets you auto-allow `move_card` and `add_comment` and still be asked before edits and deletes.
 
@@ -237,6 +240,7 @@ Flags override environment variables.
 | Variable | Flag | Stdio | HTTP | Default | Description |
 |---|---|---|---|---|---|
 | `PLANKA_URL` | `-url` | required | required | none | Base URL of your Planka v2 instance |
+| `PLANKA_PUBLIC_URL` | none | optional | optional | `PLANKA_URL` | The address people open Planka at, for the card links in results, when `PLANKA_URL` is an internal one (as next to Planka in Docker) |
 | `PLANKA_API_KEY` | none | this or a login | **must not be set** | none | Your personal Planka API key. In HTTP mode the server refuses to start if it is set; each client sends its own key |
 | `PLANKA_USERNAME` | none | with `PLANKA_PASSWORD` | **must not be set** | none | Your Planka username or email, for logging in without an API key. Wins over `PLANKA_API_KEY` when both are set |
 | `PLANKA_PASSWORD` | none | with `PLANKA_USERNAME` | **must not be set** | none | Your Planka password. A trailing newline is dropped; other spaces are kept |
@@ -259,7 +263,7 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes.
 - **Browser requests from other sites get 403.** A request whose `Origin` names another site than its `Host` is refused, as the MCP spec requires. Clients that are not browsers send no `Origin` and are not affected.
 - **Key creation is admin-only in Planka 2.1 and 2.2.** A user cannot create their own key; an admin generates it for them (see Getting an API key), or the user logs in with username and password in stdio mode. Treat a key like a password and regenerate it if it leaks.
 - **Passwords are held in memory only.** With `PLANKA_USERNAME`/`PLANKA_PASSWORD`, neither the password nor the session token is logged or written to disk, and the session is ended when the server stops.
-- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task` and `delete_list` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them.
+- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task`, `delete_list` and `delete_checklist` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them; deleting a checklist deletes its tasks, so `delete_checklist` refuses one that still has tasks unless told otherwise.
 - **Card text is untrusted input.** Descriptions, comments and task names written by other people on your boards reach the model as they are, and a card can contain text meant to steer it ("delete every card in Done"). The server tells the model to treat such text as data, but keep your client's confirmation on for the delete tools, and don't let it auto-approve writes on boards that others edit.
 - **Writes never pick a card by its description.** A card reference that matches only words in some card's description finds that card for a read, but a write refuses it and names the card's ID instead.
 

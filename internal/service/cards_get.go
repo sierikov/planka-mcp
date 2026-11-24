@@ -244,11 +244,13 @@ func (c *Cards) taskLists(ctx context.Context, cr *planka.CardResponse, home *bo
 	lists := slices.Clone(cr.Included.TaskLists)
 	slices.SortStableFunc(lists, func(a, b planka.TaskList) int { return cmp.Compare(a.Position, b.Position) })
 
+	v := taskView{
+		link:   func(cardID, name string) *CardSummary { return lk.summary(ctx, cardID, name) },
+		person: people(home, cr.Included.Users),
+	}
 	out := make([]TaskList, len(lists))
 	for i, tl := range lists {
-		out[i] = toTaskList(tl, cr.Included.Tasks, func(cardID, name string) *CardSummary {
-			return lk.summary(ctx, cardID, name)
-		})
+		out[i] = toTaskList(tl, cr.Included.Tasks, v)
 	}
 	return out
 }

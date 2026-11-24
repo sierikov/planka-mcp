@@ -24,13 +24,18 @@ const (
 // case is ignored. Title matches come first. Words may not be split between
 // title and description. Every other non-empty field narrows the search.
 // Board is an ID, a URL or a name; Project, List, Label and Assignee are
-// names, and Assignee may be "me". Archived cards are searched only when
-// IncludeArchived is set. Limit defaults to 20.
+// names, and Assignee may be "me". Due is one of DueFilters, counted in the
+// server's time zone: "overdue" is due before now and not marked done,
+// "this_week" runs from Monday to Sunday, "none" is no due date. Archived
+// cards are searched only when IncludeArchived is set. Limit defaults to 20.
 type SearchQuery struct {
-	Text, Board, Project, List, Label, Assignee string
-	IncludeArchived                             bool
-	Limit                                       int
+	Text, Board, Project, List, Label, Assignee, Due string
+	IncludeArchived                                  bool
+	Limit                                            int
 }
+
+// DueFilters are the values SearchQuery.Due takes.
+var DueFilters = []string{"overdue", "today", "this_week", "none"}
 
 // CardRef points at a card: Ref is a card ID, a card URL or a title (or part
 // of it). A title matches by the rule of SearchQuery.Text: all its words in a

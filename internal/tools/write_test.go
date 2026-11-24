@@ -155,6 +155,21 @@ func TestCreateCardOutput(t *testing.T) {
 	assert.JSONEq(t, `{"card":{"id":"c9","title":"New","board":"B","list":"Open"}}`, resultText(t, res))
 }
 
+// TestCardResultsLinkTheCard: with a public URL, get_card and the card writes
+// return the card's web link; the compact lines elsewhere do not.
+func TestCardResultsLinkTheCard(t *testing.T) {
+	cards := NewMockCardService(t)
+	cards.EXPECT().Update(mock.Anything, mock.Anything).Return(&service.WriteResult{Card: service.CardSummary{ID: "c9", Title: "New"}}, nil)
+	cards.EXPECT().Get(mock.Anything, mock.Anything, mock.Anything).Return(&service.Card{CardSummary: service.CardSummary{ID: "c9", Title: "New"}}, nil)
+	session := connect(t, Deps{Cards: cards, PublicURL: "https://planka.example.com/"})
+
+	res := call(t, session, "update_card", map[string]any{"card": "c9", "title": "New"})
+	assert.JSONEq(t, `{"card":{"id":"c9","title":"New","url":"https://planka.example.com/cards/c9"}}`, resultText(t, res))
+
+	res = call(t, session, "get_card", map[string]any{"card": "c9"})
+	assert.JSONEq(t, `{"id":"c9","title":"New","url":"https://planka.example.com/cards/c9","comments_total":0}`, resultText(t, res))
+}
+
 func TestMoveCardOutput(t *testing.T) {
 	cards := NewMockCardService(t)
 	cards.EXPECT().Move(mock.Anything, service.MoveCard{
@@ -215,7 +230,7 @@ func TestDeleteCommentAndTaskOutput(t *testing.T) {
 	comments := NewMockCommentService(t)
 	comments.EXPECT().Delete(mock.Anything, "m1").Return(nil)
 	tasks := NewMockTaskService(t)
-	tasks.EXPECT().Delete(mock.Anything, "t1").Return(nil)
+	tasks.EXPECT().Delete(mock.Anything, []string{"t1"}).Return(nil)
 	session := connect(t, Deps{Comments: comments, Tasks: tasks})
 
 	res := call(t, session, "delete_comment", map[string]any{"comment_id": "m1"})
@@ -231,7 +246,7 @@ func TestAddTasksOutput(t *testing.T) {
 	tasks := NewMockTaskService(t)
 	tasks.EXPECT().Add(mock.Anything, service.CardRef{Ref: "research"}, "Steps", []service.TaskInput{
 		{Name: "step 1"}, {Link: "readme"},
-	}).Return(&service.TaskList{ID: "tl1", Name: "Steps", Tasks: []service.Task{
+	}).Return(&service.TaskList{ID: "tl1", Name: "Steps", ShowOnFrontOfCard: true, Tasks: []service.Task{
 		{ID: "t1", Name: "step 1"},
 		{ID: "t2", Name: "Write README", Linked: &service.CardSummary{ID: "c1", Title: "Write README", List: "Open"}},
 	}}, nil)
@@ -241,7 +256,7 @@ func TestAddTasksOutput(t *testing.T) {
 		"items": []map[string]any{{"name": "step 1"}, {"link": "readme"}},
 	})
 	assert.False(t, res.IsError, resultText(t, res))
-	assert.JSONEq(t, `{"name":"Steps","tasks":[{"id":"t1","name":"step 1"},`+
+	assert.JSONEq(t, `{"id":"tl1","name":"Steps","tasks":[{"id":"t1","name":"step 1"},`+
 		`{"id":"t2","name":"Write README","link":{"id":"c1","title":"Write README","list":"Open"}}]}`, resultText(t, res))
 }
 
@@ -261,7 +276,7 @@ func TestAddTasksRejectsEmptyItems(t *testing.T) {
 
 func TestUpdateTasksOutput(t *testing.T) {
 	tasks := NewMockTaskService(t)
-	tasks.EXPECT().Update(mock.Anything, []service.TaskUpdate{
+	tasks.EXPECT().Update(mock.Anything, service.CardRef{}, []service.TaskUpdate{
 		{ID: "t1", Completed: new(true)},
 		{ID: "t2", Name: new("renamed")},
 	}).Return([]service.Task{
@@ -282,17 +297,17 @@ func TestUpdateTasksOutput(t *testing.T) {
 func TestAddTasksFlagsANewChecklist(t *testing.T) {
 	tasks := NewMockTaskService(t)
 	tasks.EXPECT().Add(mock.Anything, service.CardRef{Ref: "c1"}, "Taks", []service.TaskInput{{Name: "Write"}}).
-		Return(&service.TaskList{ID: "tl9", Name: "Taks", Tasks: []service.Task{{ID: "t1", Name: "Write"}}, Created: true, Others: []string{"Tasks"}}, nil)
+		Return(&service.TaskList{ID: "tl9", Name: "Taks", ShowOnFrontOfCard: true, Tasks: []service.Task{{ID: "t1", Name: "Write"}}, Created: true, Others: []string{"Tasks"}}, nil)
 
 	res := call(t, connect(t, Deps{Tasks: tasks}), "add_tasks", map[string]any{
 		"card": "c1", "task_list": "Taks", "items": []map[string]any{{"name": "Write"}},
 	})
 
 	assert.False(t, res.IsError, resultText(t, res))
-	assert.JSONEq(t, `{"name":"Taks","tasks":[{"id":"t1","name":"Write"}],"created":true,`+
+	assert.JSONEq(t, `{"id":"tl9","name":"Taks","tasks":[{"id":"t1","name":"Write"}],"created":true,`+
 		`"hint":"this call created the checklist \"Taks\"; the card already had \"Tasks\". `+
-		`If you meant one of those, delete these tasks with delete_task and add them there. `+
-		`The new checklist then stays on the card, empty: no tool deletes a checklist, so remove it in Planka's web UI"}`, resultText(t, res))
+		`If you meant one of those, move these tasks there with update_tasks (give card and checklist), `+
+		`then delete the new checklist with delete_checklist"}`, resultText(t, res))
 }
 
 // TestCardChoicesAreEnums: position and stopwatch take the service's fixed

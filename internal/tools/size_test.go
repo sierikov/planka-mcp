@@ -176,7 +176,7 @@ func TestToolOutputSizes(t *testing.T) {
 		{"update_tasks 50 tasks", "update_tasks", map[string]any{"items": []map[string]any{{"task_id": "t", "completed": true}}}, func(t *testing.T) Deps {
 			t.Helper()
 			tasks := NewMockTaskService(t)
-			tasks.EXPECT().Update(mock.Anything, mock.Anything).Return(sizeTaskList(50, 0).Tasks, nil)
+			tasks.EXPECT().Update(mock.Anything, mock.Anything, mock.Anything).Return(sizeTaskList(50, 0).Tasks, nil)
 			return Deps{Tasks: tasks}
 		}, defaultAnswerChars, 0},
 		{"add_comment 4k", "add_comment", map[string]any{"card": "c", "text": "x"}, func(t *testing.T) Deps {

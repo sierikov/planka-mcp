@@ -37,7 +37,8 @@ type searchFilter struct {
 	q     SearchQuery
 	words []string
 	meID  string
-	named bool // a board was named, so an unknown list or label is an error
+	named bool      // a board was named, so an unknown list or label is an error
+	now   time.Time // in the server's time zone, for the due filter
 }
 
 // boardMatcher is a searchFilter resolved against one board.
@@ -72,6 +73,9 @@ func (c *Cards) search(ctx context.Context, q SearchQuery) ([]hit, int, error) {
 	if q.Limit <= 0 {
 		q.Limit = defaultSearchLimit
 	}
+	if q.Due != "" && !slices.Contains(DueFilters, q.Due) {
+		return nil, 0, fmt.Errorf("unknown due %q: use %s", q.Due, orList(DueFilters))
+	}
 	if q.IncludeArchived {
 		if n := jsLen(archiveText(q.Text)); n > maxArchiveSearch {
 			return nil, 0, fmt.Errorf("search text is %d characters, but searching the archive allows at most %d", n, maxArchiveSearch)
@@ -85,6 +89,7 @@ func (c *Cards) search(ctx context.Context, q SearchQuery) ([]hit, int, error) {
 		q:     q,
 		words: searchWords(q.Text),
 		named: q.Board != "",
+		now:   c.now(),
 	}
 	if normalize(q.Assignee) == "me" {
 		me, err := c.users.Me(ctx)
@@ -251,7 +256,8 @@ func (f searchFilter) scan(view, owner *boardSnapshot, boardIdx int, m boardMatc
 		if tier < 0 ||
 			(m.listID != "" && card.ListID != m.listID) ||
 			(m.labelID != "" && !slices.Contains(view.cardLabel[card.ID], m.labelID)) ||
-			(m.userID != "" && !slices.Contains(view.cardUser[card.ID], m.userID)) {
+			(m.userID != "" && !slices.Contains(view.cardUser[card.ID], m.userID)) ||
+			!f.dueMatches(card) {
 			continue
 		}
 		rank, ok := listIdx[card.ListID]
@@ -306,4 +312,33 @@ func containsAll(s string, words []string) bool {
 		}
 	}
 	return true
+}
+
+// dueMatches says the card's due date fits the query's due filter.
+func (f searchFilter) dueMatches(c planka.Card) bool {
+	switch {
+	case f.q.Due == "":
+		return true
+	case c.DueDate == nil:
+		return f.q.Due == "none"
+	}
+	due := c.DueDate.In(f.now.Location())
+	switch f.q.Due {
+	case "overdue":
+		return due.Before(f.now) && (c.IsDueCompleted == nil || !*c.IsDueCompleted)
+	case "today":
+		start := startOfDay(f.now)
+		return !due.Before(start) && due.Before(start.AddDate(0, 0, 1))
+	case "this_week":
+		day := startOfDay(f.now)
+		monday := day.AddDate(0, 0, -(int(day.Weekday())+6)%7)
+		return !due.Before(monday) && due.Before(monday.AddDate(0, 0, 7))
+	}
+	return false
+}
+
+// startOfDay is midnight of t's day, in t's time zone.
+func startOfDay(t time.Time) time.Time {
+	y, m, d := t.Date()
+	return time.Date(y, m, d, 0, 0, 0, 0, t.Location())
 }

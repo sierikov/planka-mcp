@@ -59,7 +59,7 @@ func httpHarnessWith(t *testing.T, logger *slog.Logger, extra map[string]any, ke
 	}
 	fake = plankatest.NewServer(t, routes, plankatest.WithKeys(keys...))
 	client := planka.NewClient(fake.URL)
-	server := tools.NewServer(newDeps(client), "test")
+	server := tools.NewServer(newDeps(client, ""), "test")
 	srv = httptest.NewServer(newHTTPHandler(server, logger))
 	t.Cleanup(srv.Close)
 	return srv, fake

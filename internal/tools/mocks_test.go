@@ -1052,17 +1052,85 @@ func (_c *MockTaskService_Add_Call) RunAndReturn(run func(ctx context.Context, r
 	return _c
 }
 
+// CreateChecklist provides a mock function for the type MockTaskService
+func (_mock *MockTaskService) CreateChecklist(ctx context.Context, in service.CreateChecklist) (*service.ChecklistResult, error) {
+	ret := _mock.Called(ctx, in)
+
+	if len(ret) == 0 {
+		panic("no return value specified for CreateChecklist")
+	}
+
+	var r0 *service.ChecklistResult
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CreateChecklist) (*service.ChecklistResult, error)); ok {
+		return returnFunc(ctx, in)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CreateChecklist) *service.ChecklistResult); ok {
+		r0 = returnFunc(ctx, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*service.ChecklistResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, service.CreateChecklist) error); ok {
+		r1 = returnFunc(ctx, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskService_CreateChecklist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'CreateChecklist'
+type MockTaskService_CreateChecklist_Call struct {
+	*mock.Call
+}
+
+// CreateChecklist is a helper method to define mock.On call
+//   - ctx context.Context
+//   - in service.CreateChecklist
+func (_e *MockTaskService_Expecter) CreateChecklist(ctx interface{}, in interface{}) *MockTaskService_CreateChecklist_Call {
+	return &MockTaskService_CreateChecklist_Call{Call: _e.mock.On("CreateChecklist", ctx, in)}
+}
+
+func (_c *MockTaskService_CreateChecklist_Call) Run(run func(ctx context.Context, in service.CreateChecklist)) *MockTaskService_CreateChecklist_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 service.CreateChecklist
+		if args[1] != nil {
+			arg1 = args[1].(service.CreateChecklist)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskService_CreateChecklist_Call) Return(checklistResult *service.ChecklistResult, err error) *MockTaskService_CreateChecklist_Call {
+	_c.Call.Return(checklistResult, err)
+	return _c
+}
+
+func (_c *MockTaskService_CreateChecklist_Call) RunAndReturn(run func(ctx context.Context, in service.CreateChecklist) (*service.ChecklistResult, error)) *MockTaskService_CreateChecklist_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Delete provides a mock function for the type MockTaskService
-func (_mock *MockTaskService) Delete(ctx context.Context, id string) error {
-	ret := _mock.Called(ctx, id)
+func (_mock *MockTaskService) Delete(ctx context.Context, ids []string) error {
+	ret := _mock.Called(ctx, ids)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Delete")
 	}
 
 	var r0 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, string) error); ok {
-		r0 = returnFunc(ctx, id)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, []string) error); ok {
+		r0 = returnFunc(ctx, ids)
 	} else {
 		r0 = ret.Error(0)
 	}
@@ -1076,20 +1144,20 @@ type MockTaskService_Delete_Call struct {
 
 // Delete is a helper method to define mock.On call
 //   - ctx context.Context
-//   - id string
-func (_e *MockTaskService_Expecter) Delete(ctx interface{}, id interface{}) *MockTaskService_Delete_Call {
-	return &MockTaskService_Delete_Call{Call: _e.mock.On("Delete", ctx, id)}
+//   - ids []string
+func (_e *MockTaskService_Expecter) Delete(ctx interface{}, ids interface{}) *MockTaskService_Delete_Call {
+	return &MockTaskService_Delete_Call{Call: _e.mock.On("Delete", ctx, ids)}
 }
 
-func (_c *MockTaskService_Delete_Call) Run(run func(ctx context.Context, id string)) *MockTaskService_Delete_Call {
+func (_c *MockTaskService_Delete_Call) Run(run func(ctx context.Context, ids []string)) *MockTaskService_Delete_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 string
+		var arg1 []string
 		if args[1] != nil {
-			arg1 = args[1].(string)
+			arg1 = args[1].([]string)
 		}
 		run(
 			arg0,
@@ -1104,14 +1172,94 @@ func (_c *MockTaskService_Delete_Call) Return(err error) *MockTaskService_Delete
 	return _c
 }
 
-func (_c *MockTaskService_Delete_Call) RunAndReturn(run func(ctx context.Context, id string) error) *MockTaskService_Delete_Call {
+func (_c *MockTaskService_Delete_Call) RunAndReturn(run func(ctx context.Context, ids []string) error) *MockTaskService_Delete_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// DeleteChecklist provides a mock function for the type MockTaskService
+func (_mock *MockTaskService) DeleteChecklist(ctx context.Context, card service.CardRef, checklist string, withTasks bool) (*service.DeletedChecklist, error) {
+	ret := _mock.Called(ctx, card, checklist, withTasks)
+
+	if len(ret) == 0 {
+		panic("no return value specified for DeleteChecklist")
+	}
+
+	var r0 *service.DeletedChecklist
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CardRef, string, bool) (*service.DeletedChecklist, error)); ok {
+		return returnFunc(ctx, card, checklist, withTasks)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CardRef, string, bool) *service.DeletedChecklist); ok {
+		r0 = returnFunc(ctx, card, checklist, withTasks)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*service.DeletedChecklist)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, service.CardRef, string, bool) error); ok {
+		r1 = returnFunc(ctx, card, checklist, withTasks)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskService_DeleteChecklist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'DeleteChecklist'
+type MockTaskService_DeleteChecklist_Call struct {
+	*mock.Call
+}
+
+// DeleteChecklist is a helper method to define mock.On call
+//   - ctx context.Context
+//   - card service.CardRef
+//   - checklist string
+//   - withTasks bool
+func (_e *MockTaskService_Expecter) DeleteChecklist(ctx interface{}, card interface{}, checklist interface{}, withTasks interface{}) *MockTaskService_DeleteChecklist_Call {
+	return &MockTaskService_DeleteChecklist_Call{Call: _e.mock.On("DeleteChecklist", ctx, card, checklist, withTasks)}
+}
+
+func (_c *MockTaskService_DeleteChecklist_Call) Run(run func(ctx context.Context, card service.CardRef, checklist string, withTasks bool)) *MockTaskService_DeleteChecklist_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 service.CardRef
+		if args[1] != nil {
+			arg1 = args[1].(service.CardRef)
+		}
+		var arg2 string
+		if args[2] != nil {
+			arg2 = args[2].(string)
+		}
+		var arg3 bool
+		if args[3] != nil {
+			arg3 = args[3].(bool)
+		}
+		run(
+			arg0,
+			arg1,
+			arg2,
+			arg3,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskService_DeleteChecklist_Call) Return(deletedChecklist *service.DeletedChecklist, err error) *MockTaskService_DeleteChecklist_Call {
+	_c.Call.Return(deletedChecklist, err)
+	return _c
+}
+
+func (_c *MockTaskService_DeleteChecklist_Call) RunAndReturn(run func(ctx context.Context, card service.CardRef, checklist string, withTasks bool) (*service.DeletedChecklist, error)) *MockTaskService_DeleteChecklist_Call {
 	_c.Call.Return(run)
 	return _c
 }
 
 // Update provides a mock function for the type MockTaskService
-func (_mock *MockTaskService) Update(ctx context.Context, items []service.TaskUpdate) ([]service.Task, error) {
-	ret := _mock.Called(ctx, items)
+func (_mock *MockTaskService) Update(ctx context.Context, card service.CardRef, items []service.TaskUpdate) ([]service.Task, error) {
+	ret := _mock.Called(ctx, card, items)
 
 	if len(ret) == 0 {
 		panic("no return value specified for Update")
@@ -1119,18 +1267,18 @@ func (_mock *MockTaskService) Update(ctx context.Context, items []service.TaskUp
 
 	var r0 []service.Task
 	var r1 error
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []service.TaskUpdate) ([]service.Task, error)); ok {
-		return returnFunc(ctx, items)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CardRef, []service.TaskUpdate) ([]service.Task, error)); ok {
+		return returnFunc(ctx, card, items)
 	}
-	if returnFunc, ok := ret.Get(0).(func(context.Context, []service.TaskUpdate) []service.Task); ok {
-		r0 = returnFunc(ctx, items)
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.CardRef, []service.TaskUpdate) []service.Task); ok {
+		r0 = returnFunc(ctx, card, items)
 	} else {
 		if ret.Get(0) != nil {
 			r0 = ret.Get(0).([]service.Task)
 		}
 	}
-	if returnFunc, ok := ret.Get(1).(func(context.Context, []service.TaskUpdate) error); ok {
-		r1 = returnFunc(ctx, items)
+	if returnFunc, ok := ret.Get(1).(func(context.Context, service.CardRef, []service.TaskUpdate) error); ok {
+		r1 = returnFunc(ctx, card, items)
 	} else {
 		r1 = ret.Error(1)
 	}
@@ -1144,24 +1292,30 @@ type MockTaskService_Update_Call struct {
 
 // Update is a helper method to define mock.On call
 //   - ctx context.Context
+//   - card service.CardRef
 //   - items []service.TaskUpdate
-func (_e *MockTaskService_Expecter) Update(ctx interface{}, items interface{}) *MockTaskService_Update_Call {
-	return &MockTaskService_Update_Call{Call: _e.mock.On("Update", ctx, items)}
+func (_e *MockTaskService_Expecter) Update(ctx interface{}, card interface{}, items interface{}) *MockTaskService_Update_Call {
+	return &MockTaskService_Update_Call{Call: _e.mock.On("Update", ctx, card, items)}
 }
 
-func (_c *MockTaskService_Update_Call) Run(run func(ctx context.Context, items []service.TaskUpdate)) *MockTaskService_Update_Call {
+func (_c *MockTaskService_Update_Call) Run(run func(ctx context.Context, card service.CardRef, items []service.TaskUpdate)) *MockTaskService_Update_Call {
 	_c.Call.Run(func(args mock.Arguments) {
 		var arg0 context.Context
 		if args[0] != nil {
 			arg0 = args[0].(context.Context)
 		}
-		var arg1 []service.TaskUpdate
+		var arg1 service.CardRef
 		if args[1] != nil {
-			arg1 = args[1].([]service.TaskUpdate)
+			arg1 = args[1].(service.CardRef)
+		}
+		var arg2 []service.TaskUpdate
+		if args[2] != nil {
+			arg2 = args[2].([]service.TaskUpdate)
 		}
 		run(
 			arg0,
 			arg1,
+			arg2,
 		)
 	})
 	return _c
@@ -1172,7 +1326,75 @@ func (_c *MockTaskService_Update_Call) Return(tasks []service.Task, err error) *
 	return _c
 }
 
-func (_c *MockTaskService_Update_Call) RunAndReturn(run func(ctx context.Context, items []service.TaskUpdate) ([]service.Task, error)) *MockTaskService_Update_Call {
+func (_c *MockTaskService_Update_Call) RunAndReturn(run func(ctx context.Context, card service.CardRef, items []service.TaskUpdate) ([]service.Task, error)) *MockTaskService_Update_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
+// UpdateChecklist provides a mock function for the type MockTaskService
+func (_mock *MockTaskService) UpdateChecklist(ctx context.Context, in service.UpdateChecklist) (*service.ChecklistResult, error) {
+	ret := _mock.Called(ctx, in)
+
+	if len(ret) == 0 {
+		panic("no return value specified for UpdateChecklist")
+	}
+
+	var r0 *service.ChecklistResult
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.UpdateChecklist) (*service.ChecklistResult, error)); ok {
+		return returnFunc(ctx, in)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.UpdateChecklist) *service.ChecklistResult); ok {
+		r0 = returnFunc(ctx, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*service.ChecklistResult)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, service.UpdateChecklist) error); ok {
+		r1 = returnFunc(ctx, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockTaskService_UpdateChecklist_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'UpdateChecklist'
+type MockTaskService_UpdateChecklist_Call struct {
+	*mock.Call
+}
+
+// UpdateChecklist is a helper method to define mock.On call
+//   - ctx context.Context
+//   - in service.UpdateChecklist
+func (_e *MockTaskService_Expecter) UpdateChecklist(ctx interface{}, in interface{}) *MockTaskService_UpdateChecklist_Call {
+	return &MockTaskService_UpdateChecklist_Call{Call: _e.mock.On("UpdateChecklist", ctx, in)}
+}
+
+func (_c *MockTaskService_UpdateChecklist_Call) Run(run func(ctx context.Context, in service.UpdateChecklist)) *MockTaskService_UpdateChecklist_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 service.UpdateChecklist
+		if args[1] != nil {
+			arg1 = args[1].(service.UpdateChecklist)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockTaskService_UpdateChecklist_Call) Return(checklistResult *service.ChecklistResult, err error) *MockTaskService_UpdateChecklist_Call {
+	_c.Call.Return(checklistResult, err)
+	return _c
+}
+
+func (_c *MockTaskService_UpdateChecklist_Call) RunAndReturn(run func(ctx context.Context, in service.UpdateChecklist) (*service.ChecklistResult, error)) *MockTaskService_UpdateChecklist_Call {
 	_c.Call.Return(run)
 	return _c
 }

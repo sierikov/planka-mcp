@@ -35,12 +35,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "stdio with username and password",
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_USERNAME": " ann ", "PLANKA_PASSWORD": " s3cret pass \n"},
-			want: Config{URL: "http://p", Username: "ann", Password: " s3cret pass ", Transport: "stdio", Addr: ":8080"},
+			want: Config{URL: "http://p", PublicURL: "http://p", Username: "ann", Password: " s3cret pass ", Transport: "stdio", Addr: ":8080"},
 		},
 		{
 			name: "login wins over api key",
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k", "PLANKA_USERNAME": "ann", "PLANKA_PASSWORD": "pw"},
-			want: Config{URL: "http://p", Username: "ann", Password: "pw", Transport: "stdio", Addr: ":8080", APIKeyIgnored: true},
+			want: Config{URL: "http://p", PublicURL: "http://p", Username: "ann", Password: "pw", Transport: "stdio", Addr: ":8080", APIKeyIgnored: true},
 		},
 		{
 			name: "unexpanded MCPB placeholders count as unset",
@@ -48,7 +48,7 @@ func TestLoadConfig(t *testing.T) {
 				"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k",
 				"PLANKA_USERNAME": "${user_config.planka_username}", "PLANKA_PASSWORD": "${user_config.planka_password}",
 			},
-			want: Config{URL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
+			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
 		{
 			name:    "username without password",
@@ -78,12 +78,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "stdio defaults",
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k"},
-			want: Config{URL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
+			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
 		{
 			name: "api key is trimmed",
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k\n"},
-			want: Config{URL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
+			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
 		{
 			name:    "blank api key counts as missing",
@@ -93,13 +93,13 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "http from env",
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_MCP_TRANSPORT": "http", "PLANKA_MCP_ADDR": ":9000"},
-			want: Config{URL: "http://p", Transport: "http", Addr: ":9000"},
+			want: Config{URL: "http://p", PublicURL: "http://p", Transport: "http", Addr: ":9000"},
 		},
 		{
 			name: "flags override env",
 			args: []string{"-transport", "http", "-addr", ":1234", "-url", "http://flag"},
 			env:  map[string]string{"PLANKA_URL": "http://env", "PLANKA_MCP_TRANSPORT": "stdio", "PLANKA_MCP_ADDR": ":9000"},
-			want: Config{URL: "http://flag", Transport: "http", Addr: ":1234"},
+			want: Config{URL: "http://flag", PublicURL: "http://flag", Transport: "http", Addr: ":1234"},
 		},
 		{
 			name:    "bad flag",
@@ -147,6 +147,20 @@ func TestPlainHTTPWarning(t *testing.T) {
 			assert.Equal(t, "PLANKA_URL is http:// to another machine, so "+tc.want+" travels unencrypted: use the https:// address", got)
 		})
 	}
+}
+
+// TestLoadConfigPublicURL: card links use PLANKA_PUBLIC_URL, or PLANKA_URL
+// when it is not set, and a bad one fails at startup.
+func TestLoadConfigPublicURL(t *testing.T) {
+	cfg, err := loadConfig(nil, env(map[string]string{
+		"PLANKA_URL": "http://planka:1337", "PLANKA_PUBLIC_URL": " https://planka.example.com ", "PLANKA_API_KEY": "k",
+	}))
+	require.NoError(t, err)
+	assert.Equal(t, "https://planka.example.com", cfg.PublicURL)
+
+	_, err = loadConfig(nil, env(map[string]string{"PLANKA_URL": "http://p", "PLANKA_PUBLIC_URL": "planka.example.com", "PLANKA_API_KEY": "k"}))
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), `PLANKA_PUBLIC_URL "planka.example.com" is not an http(s) URL`)
 }
 
 func TestLoadConfigChecksTheURL(t *testing.T) {
