@@ -9,7 +9,7 @@ name: Release
 #   release   creates the GitHub release with the binaries and bundles
 #   npm       publishes the same binaries to npm, for npx (scripts/npm-packages.sh):
 #             @sierikov/planka-mcp and one package per platform
-#   registry  publishes server.json to the MCP Registry
+#   registry  publishes server.json to the MCP Registry, once npm shows the version
 #
 # The tag is the only place the version lives: the binaries, bundles, server.json,
 # the image and the npm packages all get it from here. `make dist VERSION=0.1.0` builds the same
@@ -194,29 +194,68 @@ jobs:
 
   registry:
     name: Publish to the MCP Registry
-    needs: [release, npm]   # the registry checks that the npm package names this server
+    needs: [tag, release, npm]   # the registry checks that the npm package names this server
     runs-on: ubuntu-latest
     permissions:
       contents: read
       id-token: write   # OIDC login to the MCP Registry
+    env:
+      VERSION: ${{ needs.tag.outputs.version }}
     steps:
+      # A re-run of this job publishes nothing twice.
+      - name: Check whether the registry has this version
+        id: listed
+        run: |
+          url="https://registry.modelcontextprotocol.io/v0/servers?search=io.github.sierikov/planka-mcp&version=${VERSION}"
+          if curl -fsS --max-time 30 "$url" | jq -e '.servers | length > 0' >/dev/null; then
+            echo "The MCP Registry already lists ${VERSION}."
+            echo "done=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      # The registry checks the npm version, and npm can take a while to show
+      # one it has just published: without this wait the publish failed on
+      # v0.3.0 and v0.4.0.
+      - name: Wait for npm to show the version
+        if: steps.listed.outputs.done != 'true'
+        run: |
+          for _ in $(seq 1 30); do
+            if npm view "@sierikov/planka-mcp@${VERSION}" version >/dev/null 2>&1; then
+              exit 0
+            fi
+            sleep 10
+          done
+          echo "::error::npm does not show @sierikov/planka-mcp@${VERSION} after 5 minutes"
+          exit 1
+
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: dist
           path: dist
 
       - name: Install mcp-publisher
+        if: steps.listed.outputs.done != 'true'
         run: |
           curl -fsSL --max-time 60 -o mcp-publisher.tar.gz "$PUBLISHER_URL"
           echo "${PUBLISHER_SHA256}  mcp-publisher.tar.gz" | sha256sum -c -
           tar xzf mcp-publisher.tar.gz mcp-publisher
           cp dist/server.json server.json
 
-      # The registry is in preview: a failure here must not fail the release.
+      # A failure here turns the run red after the release is already out:
+      # re-run this job.
       - name: Log in to the MCP Registry
+        if: steps.listed.outputs.done != 'true'
         run: ./mcp-publisher login github-oidc
-        continue-on-error: true
 
+      # The registry's own npm lookup may still lag behind npm view, so a
+      # failed publish is tried twice more.
       - name: Publish server.json
-        run: ./mcp-publisher publish
-        continue-on-error: true
+        if: steps.listed.outputs.done != 'true'
+        run: |
+          for attempt in 1 2 3; do
+            if ./mcp-publisher publish; then
+              exit 0
+            fi
+            echo "Publish attempt ${attempt} failed; retrying in 30 seconds."
+            sleep 30
+          done
+          exit 1
