@@ -79,3 +79,11 @@ type TasksAPI interface {
 	UpdateTask(ctx context.Context, id string, r planka.UpdateTaskRequest) (*planka.Task, error)
 	DeleteTask(ctx context.Context, id string) error
 }
+
+// AttachmentsAPI adds, renames and deletes the files and links on cards.
+type AttachmentsAPI interface {
+	CreateFileAttachment(ctx context.Context, cardID string, f planka.FileUpload) (*planka.Attachment, error)
+	CreateLinkAttachment(ctx context.Context, cardID, name, url string) (*planka.Attachment, error)
+	UpdateAttachment(ctx context.Context, id, name string) (*planka.Attachment, error)
+	DeleteAttachment(ctx context.Context, id string) error
+}

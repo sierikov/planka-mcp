@@ -50,7 +50,7 @@ func (c *Cards) Get(ctx context.Context, ref CardRef, commentsLimit int) (*Card,
 		Type:         item.Type,
 		Description:  deref(item.Description),
 		Stopwatch:    c.stopwatch(item.Stopwatch),
-		Attachments:  attachments(cr.Included.Attachments),
+		Attachments:  attachments(cr.Included.Attachments, deref(item.CoverAttachmentID)),
 		CustomFields: c.customFields(ctx, cr, snap),
 		Comments:     comments,
 		Created:      item.CreatedAt,
@@ -101,11 +101,11 @@ func (c *Cards) stopwatch(sw *planka.Stopwatch) *Stopwatch {
 	return &Stopwatch{Total: total, Running: sw.StartedAt != nil}
 }
 
-func attachments(in []planka.Attachment) []Attachment {
+// attachments converts a card's attachments; cover is the card's cover ID.
+func attachments(in []planka.Attachment, cover string) []Attachment {
 	out := make([]Attachment, 0, len(in))
 	for _, a := range in {
-		url, _ := a.Data["url"].(string)
-		out = append(out, Attachment{Name: a.Name, URL: url})
+		out = append(out, toAttachment(a, cover))
 	}
 	return out
 }

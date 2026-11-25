@@ -50,14 +50,26 @@ type ListService interface {
 	Delete(ctx context.Context, board, list string) (*service.DeletedList, error)
 }
 
+// AttachmentService adds, changes and deletes the files and links on cards.
+type AttachmentService interface {
+	Add(ctx context.Context, in service.AddAttachment) (*service.Attachment, error)
+	Update(ctx context.Context, in service.UpdateAttachment) (*service.Attachment, error)
+	Delete(ctx context.Context, card service.CardRef, attachment string) (*service.Attachment, error)
+}
+
 // Deps are the services the tools call. Every service is required.
 type Deps struct {
-	Catalog  CatalogService
-	Cards    CardService
-	Comments CommentService
-	Tasks    TaskService
-	Lists    ListService
+	Catalog     CatalogService
+	Cards       CardService
+	Comments    CommentService
+	Tasks       TaskService
+	Lists       ListService
+	Attachments AttachmentService
 
 	// PublicURL is the base of the card links in results ("" leaves them out).
 	PublicURL string
+	// Uploads offers add_attachment's path: the server runs on the user's own
+	// machine (stdio), so local files are the user's. Without it the tool
+	// attaches links only.
+	Uploads bool
 }

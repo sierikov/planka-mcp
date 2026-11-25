@@ -2,12 +2,14 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"io"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/modelcontextprotocol/go-sdk/mcp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -77,4 +79,35 @@ func TestRunHTTPReportsBindFailure(t *testing.T) {
 	require.Error(t, err)
 	require.NotErrorIs(t, err, context.Canceled)
 	assert.Contains(t, err.Error(), "listen on")
+}
+
+// TestRunHTTPAttachesLinksOnly: a shared HTTP server runs on another machine than its users, so
+// add_attachment offers no path there, and a path is refused before the tool runs.
+func TestRunHTTPAttachesLinksOnly(t *testing.T) {
+	ln, err := (&net.ListenConfig{}).Listen(t.Context(), "tcp", "127.0.0.1:0")
+	require.NoError(t, err)
+	ctx, cancel := context.WithCancel(t.Context())
+	done := make(chan error, 1)
+	go func() { done <- runHTTP(ctx, Config{URL: "http://127.0.0.1:1", Transport: "http"}, ln) }()
+	t.Cleanup(func() { cancel(); <-done })
+
+	httpClient := &http.Client{Transport: headerTransport{header: http.Header{"Authorization": {"Bearer k1"}}, next: http.DefaultTransport}}
+	client := mcp.NewClient(&mcp.Implementation{Name: "test", Version: "0"}, nil)
+	session, err := client.Connect(t.Context(), &mcp.StreamableClientTransport{Endpoint: "http://" + ln.Addr().String() + "/mcp", HTTPClient: httpClient}, nil)
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = session.Close() })
+	res, err := session.ListTools(t.Context(), nil)
+	require.NoError(t, err)
+
+	for _, tool := range res.Tools {
+		if tool.Name != "add_attachment" {
+			continue
+		}
+		schema, err := json.Marshal(tool.InputSchema)
+		require.NoError(t, err)
+		assert.NotContains(t, string(schema), `"path"`)
+		assert.Contains(t, tool.Description, "cannot upload files")
+		return
+	}
+	require.FailNow(t, "add_attachment is not registered")
 }

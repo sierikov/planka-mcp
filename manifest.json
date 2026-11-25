@@ -3,7 +3,7 @@
   "name": "planka-mcp",
   "display_name": "MCP server for Planka (unofficial)",
   "version": "0.0.0-dev",
-  "description": "Find, read and manage cards on your Planka v2 kanban boards: move them, comment, edit, and tick off checklists.",
+  "description": "Find, read and manage cards on your Planka v2 kanban boards: move them, comment, edit, tick off checklists and attach files.",
   "author": {
     "name": "Artem Sierikov"
   },
@@ -111,6 +111,18 @@
     {
       "name": "delete_checklist",
       "description": "Delete a checklist and, when told to, the tasks in it"
+    },
+    {
+      "name": "add_attachment",
+      "description": "Attach a file from this computer, or a link, to a card"
+    },
+    {
+      "name": "update_attachment",
+      "description": "Rename an attachment, or make an image the card's cover"
+    },
+    {
+      "name": "delete_attachment",
+      "description": "Delete an attachment from a card"
     }
   ],
   "user_config": {

@@ -45,7 +45,7 @@ func newRecordedServer(t *testing.T, extra map[string]any) (server *mcp.Server, 
 	}
 	srv := plankatest.NewServer(t, routes)
 	client := planka.NewClient(srv.URL, planka.WithStaticKey(plankatest.APIKey))
-	return tools.NewServer(newDeps(client, ""), "test"), srv
+	return tools.NewServer(newDeps(client, "", true), "test"), srv
 }
 
 func callText(t *testing.T, session *mcp.ClientSession, name string, args map[string]any) string {

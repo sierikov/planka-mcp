@@ -647,9 +647,12 @@ func TestGetCardStopwatchAttachmentsAndCustomFields(t *testing.T) {
 	card := fixtureCard(t)
 	started := now.Add(-90 * time.Second)
 	card.Item.Stopwatch = &planka.Stopwatch{StartedAt: &started, Total: 60}
+	card.Item.CoverAttachmentID = new("a3")
 	card.Included.Attachments = []planka.Attachment{
-		{ID: "a1", Name: "spec.pdf", Type: "file", Data: map[string]any{"url": "https://files/spec.pdf", "size": 12}},
+		{ID: "a1", Name: "spec.pdf", Type: "file", Data: planka.AttachmentData{URL: "https://files/spec.pdf", Size: "12"}},
 		{ID: "a2", Name: "no url", Type: "file"},
+		{ID: "a3", Name: "photo", Type: "file", Data: planka.AttachmentData{URL: "https://files/photo.jpg", Image: &planka.AttachmentImage{}}},
+		{ID: "a4", Name: "docs", Type: "link", Data: planka.AttachmentData{URL: "https://example.com/docs"}},
 	}
 	groupName := "Release"
 	card.Included.CustomFieldGroups = []planka.CustomFieldGroup{{ID: "g1", Name: &groupName}, {ID: "g2"}}
@@ -666,7 +669,12 @@ func TestGetCardStopwatchAttachmentsAndCustomFields(t *testing.T) {
 
 	require.NoError(t, err)
 	assert.Equal(t, &Stopwatch{Total: 150 * time.Second, Running: true}, got.Stopwatch)
-	assert.Equal(t, []Attachment{{Name: "spec.pdf", URL: "https://files/spec.pdf"}, {Name: "no url"}}, got.Attachments)
+	assert.Equal(t, []Attachment{
+		{ID: "a1", Name: "spec.pdf", Type: "file", URL: "https://files/spec.pdf", Size: 12},
+		{ID: "a2", Name: "no url", Type: "file"},
+		{ID: "a3", Name: "photo", Type: "file", URL: "https://files/photo.jpg", Cover: true},
+		{ID: "a4", Name: "docs", Type: "link", URL: "https://example.com/docs"},
+	}, got.Attachments)
 	assert.Equal(t, []CustomFieldGroup{
 		{Name: "Release", Fields: []CustomField{{Name: "Version", Value: "1.2"}}},
 		{Fields: []CustomField{{Name: "Owner", Value: "Ann"}}},

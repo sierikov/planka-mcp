@@ -33,6 +33,10 @@ func TestWriteToolAnnotations(t *testing.T) {
 		"create_list":    {DestructiveHint: new(false), OpenWorldHint: new(false)},
 		"update_list":    {IdempotentHint: true, OpenWorldHint: new(false)},
 		"delete_list":    {DestructiveHint: new(true), OpenWorldHint: new(false)},
+
+		"add_attachment":    {DestructiveHint: new(false), OpenWorldHint: new(false)},
+		"update_attachment": {IdempotentHint: true, OpenWorldHint: new(false)},
+		"delete_attachment": {DestructiveHint: new(true), OpenWorldHint: new(false)},
 	}
 	seen := 0
 	for _, tool := range res.Tools {

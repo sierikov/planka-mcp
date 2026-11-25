@@ -54,12 +54,16 @@ func WithAPIKey(ctx context.Context, key string) context.Context {
 	return context.WithValue(ctx, ctxKey{}, key)
 }
 
+// uploadTimeout is the shortest time limit of a request that uploads a file.
+const uploadTimeout = 5 * time.Minute
+
 // Client is an HTTP client for the Planka API.
 type Client struct {
-	baseURL    string
-	staticKey  string
-	session    *session // set by WithLogin
-	httpClient *http.Client
+	baseURL      string
+	staticKey    string
+	session      *session // set by WithLogin
+	httpClient   *http.Client
+	uploadClient *http.Client // httpClient with a time limit of at least uploadTimeout
 }
 
 // Option configures a Client.
@@ -72,8 +76,8 @@ func WithStaticKey(key string) Option {
 }
 
 // WithHTTPClient replaces the default HTTP client (15 second timeout). The
-// client uses a copy of h that never follows redirects; h itself is left as it
-// is.
+// client uses a copy of h that never follows redirects, and another copy with a
+// time limit of at least five minutes for uploads; h itself is left as it is.
 func WithHTTPClient(h *http.Client) Option {
 	return func(c *Client) { c.httpClient = h }
 }
@@ -93,6 +97,13 @@ func NewClient(baseURL string, opts ...Option) *Client {
 	h := *c.httpClient
 	h.CheckRedirect = func(*http.Request, []*http.Request) error { return http.ErrUseLastResponse }
 	c.httpClient = &h
+	// An upload may take minutes on a slow link, and Planka makes thumbnails
+	// of images before it answers.
+	u := h
+	if u.Timeout > 0 && u.Timeout < uploadTimeout {
+		u.Timeout = uploadTimeout
+	}
+	c.uploadClient = &u
 	return c
 }
 
@@ -140,7 +151,15 @@ func truncate(s string) string {
 	return s[:cut]
 }
 
-// newRequest builds an authenticated request with an optional JSON body.
+// rawBody is a request body sent as it is, such as a multipart form. The bytes
+// stay in memory, so do can send them again after a re-login.
+type rawBody struct {
+	contentType string
+	data        []byte
+}
+
+// newRequest builds an authenticated request. A body is sent as JSON, unless
+// it is a rawBody.
 func (c *Client) newRequest(ctx context.Context, cred credential, method, path string, query url.Values, body any) (*http.Request, error) {
 	u, err := url.Parse(c.baseURL + path)
 	if err != nil {
@@ -151,12 +170,17 @@ func (c *Client) newRequest(ctx context.Context, cred credential, method, path s
 	}
 
 	reqBody := io.Reader(http.NoBody)
-	if body != nil {
+	var contentType string
+	switch b := body.(type) {
+	case nil:
+	case rawBody:
+		reqBody, contentType = bytes.NewReader(b.data), b.contentType
+	default:
 		encoded, err := json.Marshal(body)
 		if err != nil {
 			return nil, fmt.Errorf("encoding request: %w", err)
 		}
-		reqBody = bytes.NewReader(encoded)
+		reqBody, contentType = bytes.NewReader(encoded), "application/json"
 	}
 
 	req, err := http.NewRequestWithContext(ctx, method, u.String(), reqBody)
@@ -165,8 +189,8 @@ func (c *Client) newRequest(ctx context.Context, cred credential, method, path s
 	}
 	req.Header.Set(cred.header, cred.value)
 	req.Header.Set("Accept", "application/json")
-	if body != nil {
-		req.Header.Set("Content-Type", "application/json")
+	if contentType != "" {
+		req.Header.Set("Content-Type", contentType)
 	}
 	return req, nil
 }
@@ -205,7 +229,11 @@ func (c *Client) send(ctx context.Context, cred credential, method, path string,
 		return err
 	}
 
-	resp, err := c.httpClient.Do(req)
+	h := c.httpClient
+	if _, ok := body.(rawBody); ok {
+		h = c.uploadClient
+	}
+	resp, err := h.Do(req)
 	if err != nil {
 		return fmt.Errorf("request failed: %w", err)
 	}

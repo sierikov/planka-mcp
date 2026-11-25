@@ -221,11 +221,13 @@ func (p *planka) meName(t *testing.T) string {
 
 // storedCard is a card as Planka itself stores it, read past the MCP server.
 type storedCard struct {
-	ID        string     `json:"id"`
-	BoardID   string     `json:"boardId"`
-	ListID    string     `json:"listId"`
-	DueDate   *time.Time `json:"dueDate"`
-	Stopwatch *struct {
+	ID      string     `json:"id"`
+	BoardID string     `json:"boardId"`
+	ListID  string     `json:"listId"`
+	DueDate *time.Time `json:"dueDate"`
+	// CoverAttachmentID is the image shown on the card's front.
+	CoverAttachmentID *string `json:"coverAttachmentId"`
+	Stopwatch         *struct {
 		StartedAt *time.Time `json:"startedAt"`
 		Total     int64      `json:"total"`
 	} `json:"stopwatch"`

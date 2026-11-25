@@ -106,7 +106,10 @@ func sizeFullCard(descLen, comments, commentLen, attachments int, tl *service.Ta
 	}
 	c.CommentsTotal = comments
 	for i := range attachments {
-		c.Attachments = append(c.Attachments, service.Attachment{Name: fmt.Sprintf("screenshot-%d.png", i), URL: "https://plan.example.com/attachments/" + sizeID(80000+i) + "/download/screenshot.png"})
+		c.Attachments = append(c.Attachments, service.Attachment{
+			ID: sizeID(80000 + i), Name: fmt.Sprintf("screenshot-%d.png", i), Type: "file", Size: 1234567,
+			URL: "https://plan.example.com/attachments/" + sizeID(80000+i) + "/download/screenshot.png",
+		})
 	}
 	if tl != nil {
 		c.TaskLists = []service.TaskList{*tl}

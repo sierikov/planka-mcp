@@ -97,18 +97,21 @@ func command(args []string, stdout io.Writer) (code int, ok bool) {
 }
 
 // newDeps wires the services on a Planka client. publicURL is the base of the
-// card links in tool results.
-func newDeps(c *planka.Client, publicURL string) tools.Deps {
+// card links in tool results. uploads lets add_attachment read local files,
+// which only stdio mode does: there the server runs on the user's machine.
+func newDeps(c *planka.Client, publicURL string, uploads bool) tools.Deps {
 	catalog := service.NewCatalog(c, c)
 	cards := service.NewCards(catalog, c, c, c, c, c, c, c)
 	return tools.Deps{
-		Catalog:  catalog,
-		Cards:    cards,
-		Comments: service.NewComments(cards, c),
-		Tasks:    service.NewTasks(cards, c),
-		Lists:    service.NewLists(cards, c),
+		Catalog:     catalog,
+		Cards:       cards,
+		Comments:    service.NewComments(cards, c),
+		Tasks:       service.NewTasks(cards, c),
+		Lists:       service.NewLists(cards, c),
+		Attachments: service.NewAttachments(cards, c, uploads),
 
 		PublicURL: publicURL,
+		Uploads:   uploads,
 	}
 }
 
@@ -118,7 +121,7 @@ func run(ctx context.Context, cfg Config, stdin io.Reader, stdout io.Writer) err
 	case transportStdio:
 		client := planka.NewClient(cfg.URL, stdioAuth(cfg))
 		defer logout(ctx, client)
-		server := tools.NewServer(newDeps(client, cfg.PublicURL), buildVersion())
+		server := tools.NewServer(newDeps(client, cfg.PublicURL, true), buildVersion())
 		// The SDK closes the reader when ctx ends, which is what unblocks a read on an idle
 		// stdin, so a closable reader must keep its Close. Stdout is never closed.
 		reader, ok := stdin.(io.ReadCloser)
@@ -167,7 +170,7 @@ func logout(ctx context.Context, client *planka.Client) {
 // every request: each carries its own key in its context.
 func runHTTP(ctx context.Context, cfg Config, ln net.Listener) error {
 	client := planka.NewClient(cfg.URL)
-	server := tools.NewServer(newDeps(client, cfg.PublicURL), buildVersion())
+	server := tools.NewServer(newDeps(client, cfg.PublicURL, false), buildVersion())
 	logger := slog.Default() // main installs its stderr logger as the default
 	return serveHTTP(ctx, ln, newHTTPHandler(server, logger), logger)
 }

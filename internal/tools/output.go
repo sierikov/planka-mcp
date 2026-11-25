@@ -94,9 +94,20 @@ type customFieldOut struct {
 	ShowOnFrontOfCard bool   `json:"show_on_front_of_card,omitzero"`
 }
 
+// attachmentOut is a file or link on a card. Size is a file's size in bytes;
+// cover marks the image shown on the card's front. A file's url opens only for
+// someone signed in to Planka.
 type attachmentOut struct {
-	Name string `json:"name"`
-	URL  string `json:"url"`
+	ID    string `json:"id,omitempty"`
+	Name  string `json:"name"`
+	Type  string `json:"type,omitempty"`
+	Size  int64  `json:"size,omitzero"`
+	URL   string `json:"url,omitempty"`
+	Cover bool   `json:"cover,omitzero"`
+}
+
+func toAttachmentOut(a service.Attachment) attachmentOut {
+	return attachmentOut{ID: a.ID, Name: a.Name, Type: a.Type, Size: a.Size, URL: a.URL, Cover: a.Cover}
 }
 
 // taskListOut is a checklist. Its display options show only where they
@@ -218,7 +229,7 @@ func toCardOut(c *service.Card) cardOut {
 		out.TaskLists = append(out.TaskLists, toTaskListOut(tl))
 	}
 	for _, a := range c.Attachments {
-		out.Attachments = append(out.Attachments, attachmentOut{Name: a.Name, URL: a.URL})
+		out.Attachments = append(out.Attachments, toAttachmentOut(a))
 	}
 	for _, g := range c.CustomFields {
 		group := customFieldGroupOut{Group: g.Name, Fields: make([]customFieldOut, len(g.Fields))}

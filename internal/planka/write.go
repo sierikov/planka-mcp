@@ -66,16 +66,18 @@ func (r CreateCardRequest) MarshalJSON() ([]byte, error) {
 
 // UpdateCardRequest is the body of PATCH /api/cards/:id. Only the fields that
 // are Set are sent, and a Null field is sent as JSON null. Moving a card to
-// another list needs Position as well as ListID.
+// another list needs Position as well as ListID. CoverAttachmentID must name a
+// file attachment of the card; Null removes the cover.
 type UpdateCardRequest struct {
-	BoardID        Optional[string]
-	ListID         Optional[string]
-	Position       Optional[float64]
-	Name           Optional[string]
-	Description    Optional[string]
-	DueDate        Optional[time.Time]
-	IsDueCompleted Optional[bool]
-	Stopwatch      Optional[Stopwatch]
+	BoardID           Optional[string]
+	ListID            Optional[string]
+	Position          Optional[float64]
+	Name              Optional[string]
+	Description       Optional[string]
+	DueDate           Optional[time.Time]
+	IsDueCompleted    Optional[bool]
+	Stopwatch         Optional[Stopwatch]
+	CoverAttachmentID Optional[string]
 }
 
 // MarshalJSON emits only the Set fields, as null where Null is true. Times go
@@ -91,6 +93,7 @@ func (r UpdateCardRequest) MarshalJSON() ([]byte, error) {
 	put(m, "dueDate", Optional[string]{Set: due.Set, Null: due.Null, Value: wireTime(due.Value)})
 	put(m, "isDueCompleted", r.IsDueCompleted)
 	put(m, "stopwatch", r.Stopwatch)
+	put(m, "coverAttachmentId", r.CoverAttachmentID)
 	return json.Marshal(m)
 }
 

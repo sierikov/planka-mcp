@@ -54,10 +54,12 @@ type Card struct {
 	IsDueCompleted *bool      `json:"isDueCompleted"`
 	Stopwatch      *Stopwatch `json:"stopwatch"`
 	Position       *float64   `json:"position"`
-	CommentsTotal  int        `json:"commentsTotal"`
-	ListChangedAt  time.Time  `json:"listChangedAt"`
-	CreatedAt      time.Time  `json:"createdAt"`
-	UpdatedAt      *time.Time `json:"updatedAt"`
+	// CoverAttachmentID is the image attachment shown on the card's front.
+	CoverAttachmentID *string    `json:"coverAttachmentId"`
+	CommentsTotal     int        `json:"commentsTotal"`
+	ListChangedAt     time.Time  `json:"listChangedAt"`
+	CreatedAt         time.Time  `json:"createdAt"`
+	UpdatedAt         *time.Time `json:"updatedAt"`
 }
 
 // Stopwatch is a card's time tracker; Total is in seconds.
@@ -136,13 +138,35 @@ type Task struct {
 	Position       float64 `json:"position"`
 }
 
-// Attachment is a file or link attached to a card.
+// Attachment types.
+const (
+	AttachmentFile = "file"
+	AttachmentLink = "link"
+)
+
+// Attachment is a file or link attached to a card. Type is AttachmentFile or
+// AttachmentLink.
 type Attachment struct {
 	ID     string         `json:"id"`
 	CardID string         `json:"cardId"`
 	Name   string         `json:"name"`
 	Type   string         `json:"type"`
-	Data   map[string]any `json:"data"`
+	Data   AttachmentData `json:"data"`
+}
+
+// AttachmentData is what Planka keeps about an attachment. URL is the link, or
+// the file's download address, which only a signed-in user can open. Size (in
+// bytes) is set for files, and Image for the files Planka could read as images.
+type AttachmentData struct {
+	URL   string           `json:"url"`
+	Size  json.Number      `json:"size"`
+	Image *AttachmentImage `json:"image"`
+}
+
+// AttachmentImage is the size of an image attachment, in pixels.
+type AttachmentImage struct {
+	Width  int `json:"width"`
+	Height int `json:"height"`
 }
 
 // CustomFieldGroup groups custom fields, on a board or on a card. A group made

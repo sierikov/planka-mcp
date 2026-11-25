@@ -40,7 +40,9 @@ type Recorded struct {
 	Path   string
 	Query  url.Values
 	Body   []byte
-	APIKey string
+	// ContentType is the request's Content-Type header.
+	ContentType string
+	APIKey      string
 	// Bearer is the token of an "Authorization: Bearer" header, if any.
 	Bearer string
 }
@@ -125,12 +127,13 @@ func (s *Server) serve(w http.ResponseWriter, r *http.Request) {
 	body, _ := io.ReadAll(r.Body)
 	s.mu.Lock()
 	s.requests = append(s.requests, Recorded{
-		Method: r.Method,
-		Path:   r.URL.Path,
-		Query:  r.URL.Query(),
-		Body:   body,
-		APIKey: r.Header.Get("X-Api-Key"),
-		Bearer: bearer(r),
+		Method:      r.Method,
+		Path:        r.URL.Path,
+		Query:       r.URL.Query(),
+		Body:        body,
+		ContentType: r.Header.Get("Content-Type"),
+		APIKey:      r.Header.Get("X-Api-Key"),
+		Bearer:      bearer(r),
 	})
 	s.mu.Unlock()
 

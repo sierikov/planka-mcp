@@ -119,6 +119,11 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"create_list": {"board", "name"},
 		"update_list": {"board", "list"},
 		"delete_list": {"board", "list"},
+
+		// Deps{} has no Uploads, so add_attachment takes links only.
+		"add_attachment":    {"card", "url"},
+		"update_attachment": {"card", "attachment"},
+		"delete_attachment": {"card", "attachment"},
 	}
 	for _, tool := range res.Tools {
 		assert.NotEmpty(t, tool.Description, tool.Name)

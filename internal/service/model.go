@@ -83,9 +83,14 @@ type Task struct {
 	Checklist string
 }
 
-// Attachment is a file or link attached to a card.
+// Attachment is a file or link attached to a card. Type is "file" or "link".
+// URL is the link, or the file's download address, which only someone signed
+// in to Planka can open. Size is a file's size in bytes. Cover marks the image
+// shown on the card's front.
 type Attachment struct {
-	Name, URL string
+	ID, Name, Type, URL string
+	Size                int64
+	Cover               bool
 }
 
 // CustomFieldGroup is a group of custom fields that have values on a card.
