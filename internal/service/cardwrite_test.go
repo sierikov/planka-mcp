@@ -3,6 +3,7 @@ package service
 import (
 	"context"
 	"errors"
+	"net/http"
 	"testing"
 	"time"
 
@@ -206,7 +207,7 @@ func TestMoveRejectsUnknownPositionWord(t *testing.T) {
 	require.ErrorContains(t, err, "top")
 }
 
-func TestUpdateAddsMissingLabelWithDefaultColor(t *testing.T) {
+func TestUpdateAddsMissingLabelInItsNameColor(t *testing.T) {
 	f := newCardsFixture(t)
 	after := writeBoard()
 	after.Included.Labels = append(after.Included.Labels,
@@ -858,4 +859,20 @@ func TestAddTasksLinkByDescriptionLooksOnEveryBoardThenRefuses(t *testing.T) {
 	require.ErrorAs(t, err, &desc)
 	assert.Equal(t, "c4", desc.Card.ID)
 	assert.ErrorContains(t, err, "item 1: ")
+}
+
+// TestUpdateSaysNothingWasWrittenWhenThePatchFails: the field PATCH is the
+// first write, so its failure says nothing changed, and keeps Planka's error.
+func TestUpdateSaysNothingWasWrittenWhenThePatchFails(t *testing.T) {
+	f := newCardsFixture(t)
+	f.serveLocked(writeBoard())
+	f.write.EXPECT().UpdateCard(mock.Anything, "c1", mock.Anything).Return(nil, &planka.APIError{Status: http.StatusRequestEntityTooLarge}).Once()
+
+	_, err := f.svc.Update(t.Context(), UpdateCard{Card: alphaRef, Title: new("Renamed"), AddLabels: []string{"ui"}})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), "changing the fields of card c1 failed, so nothing was written")
+	var api *planka.APIError
+	require.ErrorAs(t, err, &api)
+	assert.Equal(t, http.StatusRequestEntityTooLarge, api.Status)
 }

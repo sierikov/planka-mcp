@@ -1,0 +1,28 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this only when a whole Planka board must go: its lists and cards are deleted with it, for good. A board with cards is refused unless with_cards=true. Only a project manager can. Returns the deleted board and how many cards went with it.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "with_cards": {
+        "description": "also delete the cards still on it, archived ones included (default false: a board with cards is refused)",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "board"
+    ],
+    "type": "object"
+  },
+  "name": "delete_board",
+  "title": "Delete board"
+}

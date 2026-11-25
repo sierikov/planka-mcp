@@ -111,6 +111,7 @@ func newDeps(c *planka.Client, publicURL string, uploads bool) tools.Deps {
 		Attachments:  service.NewAttachments(cards, c, uploads),
 		Labels:       service.NewLabels(cards, c),
 		CustomFields: service.NewCustomFields(cards, c),
+		Boards:       service.NewBoards(cards, c, c),
 
 		PublicURL: publicURL,
 		Uploads:   uploads,

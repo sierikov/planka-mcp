@@ -223,6 +223,15 @@ func TestErrorResultOther(t *testing.T) {
 	assert.Equal(t, "planka: status 500", resultText(t, res))
 }
 
+// TestErrorResultIsNeverEmpty: an empty error message would leave the model
+// guessing, so the result says the call failed and how to check.
+func TestErrorResultIsNeverEmpty(t *testing.T) {
+	res, _, _ := errorResult(errors.New(" "))
+
+	assert.True(t, res.IsError)
+	assert.Contains(t, resultText(t, res), "the call failed without an error message (*errors.errorString)")
+}
+
 func TestJSONResultIsCompact(t *testing.T) {
 	res, out, err := jsonResult(map[string]any{"a": 1, "b": []string{"x"}})
 	require.NoError(t, err)

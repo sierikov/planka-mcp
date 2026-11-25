@@ -1,0 +1,43 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add a board to a Planka project, with its lists in one call. Only a project manager can. Returns the board as get_board shows it.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "closed_list": {
+        "description": "name of a closed list for finished cards, added last (for example Done)",
+        "type": "string"
+      },
+      "lists": {
+        "description": "names of the board's lists (columns), in order",
+        "items": {
+          "type": "string"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "name": {
+        "description": "the new board's name; it must differ from the project's other boards",
+        "type": "string"
+      },
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project",
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "create_board",
+  "title": "Create board"
+}

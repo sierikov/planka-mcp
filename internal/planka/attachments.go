@@ -45,26 +45,35 @@ func (c *Client) DeleteAttachment(ctx context.Context, id string) error {
 	return c.do(ctx, http.MethodDelete, "/api/attachments/"+pathParam(id), nil, nil, nil)
 }
 
-// multipartFile is the form Planka takes a file in. The text fields go first:
-// Planka reads the form as a stream and does not wait for fields that come
-// after the file.
+// multipartFile is the form Planka takes a file in.
 func multipartFile(f FileUpload) (rawBody, error) {
+	body, err := multipartForm([][2]string{{"type", AttachmentFile}, {"name", f.Name}}, &f)
+	body.upload = true
+	return body, err
+}
+
+// multipartForm builds a multipart form of fields and, when file is not nil,
+// a "file" part. The text fields go first: Planka reads the form as a stream
+// and does not wait for fields that come after the file.
+func multipartForm(fields [][2]string, file *FileUpload) (rawBody, error) {
 	var buf bytes.Buffer
 	w := multipart.NewWriter(&buf)
-	for _, field := range [][2]string{{"type", AttachmentFile}, {"name", f.Name}} {
+	for _, field := range fields {
 		if err := w.WriteField(field[0], field[1]); err != nil {
 			return rawBody{}, err
 		}
 	}
-	h := textproto.MIMEHeader{}
-	h.Set("Content-Disposition", multipart.FileContentDisposition("file", f.Filename))
-	h.Set("Content-Type", cmp.Or(f.ContentType, "application/octet-stream"))
-	part, err := w.CreatePart(h)
-	if err != nil {
-		return rawBody{}, err
-	}
-	if _, err := part.Write(f.Data); err != nil {
-		return rawBody{}, err
+	if file != nil {
+		h := textproto.MIMEHeader{}
+		h.Set("Content-Disposition", multipart.FileContentDisposition("file", file.Filename))
+		h.Set("Content-Type", cmp.Or(file.ContentType, "application/octet-stream"))
+		part, err := w.CreatePart(h)
+		if err != nil {
+			return rawBody{}, err
+		}
+		if _, err := part.Write(file.Data); err != nil {
+			return rawBody{}, err
+		}
 	}
 	if err := w.Close(); err != nil {
 		return rawBody{}, err

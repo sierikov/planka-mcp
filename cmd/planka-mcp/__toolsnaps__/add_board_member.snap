@@ -1,0 +1,45 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to give someone access to a Planka board, as editor or viewer. Only a project manager can, and adding anyone but yourself (person=me) needs a Planka admin or project owner. Returns the member.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "can_comment": {
+        "description": "let a viewer comment (default false); editors always can",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "person": {
+        "description": "username, full name or email of a Planka user, or me",
+        "type": "string"
+      },
+      "role": {
+        "description": "editor (can change cards) or viewer (read only)",
+        "enum": [
+          "editor",
+          "viewer"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "person",
+      "role"
+    ],
+    "type": "object"
+  },
+  "name": "add_board_member",
+  "title": "Add board member"
+}

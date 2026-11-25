@@ -41,6 +41,13 @@ func TestWriteToolAnnotations(t *testing.T) {
 		"set_custom_fields": {IdempotentHint: true, OpenWorldHint: new(false)},
 		"update_label":      {IdempotentHint: true, OpenWorldHint: new(false)},
 		"delete_label":      {DestructiveHint: new(true), OpenWorldHint: new(false)},
+
+		"create_board":        {DestructiveHint: new(false), OpenWorldHint: new(false)},
+		"update_board":        {IdempotentHint: true, OpenWorldHint: new(false)},
+		"delete_board":        {DestructiveHint: new(true), OpenWorldHint: new(false)},
+		"add_board_member":    {DestructiveHint: new(false), OpenWorldHint: new(false)},
+		"update_board_member": {IdempotentHint: true, OpenWorldHint: new(false)},
+		"remove_board_member": {DestructiveHint: new(true), OpenWorldHint: new(false)},
 	}
 	seen := 0
 	for _, tool := range res.Tools {

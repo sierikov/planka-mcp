@@ -15,101 +15,84 @@ func env(m map[string]string) func(string) string {
 }
 
 func TestLoadConfig(t *testing.T) {
-	tests := []struct {
-		name    string
+	tests := map[string]struct {
 		args    []string
 		env     map[string]string
 		want    Config
 		wantErr string
 	}{
-		{
-			name:    "missing url",
+		"missing url": {
 			env:     map[string]string{"PLANKA_API_KEY": "k"},
 			wantErr: "PLANKA_URL",
 		},
-		{
-			name:    "stdio without key",
+		"stdio without key": {
 			env:     map[string]string{"PLANKA_URL": "http://p"},
 			wantErr: "stdio mode needs PLANKA_API_KEY, or PLANKA_USERNAME and PLANKA_PASSWORD",
 		},
-		{
-			name: "stdio with username and password",
+		"stdio with username and password": {
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_USERNAME": " ann ", "PLANKA_PASSWORD": " s3cret pass \n"},
 			want: Config{URL: "http://p", PublicURL: "http://p", Username: "ann", Password: " s3cret pass ", Transport: "stdio", Addr: ":8080"},
 		},
-		{
-			name: "login wins over api key",
+		"login wins over api key": {
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k", "PLANKA_USERNAME": "ann", "PLANKA_PASSWORD": "pw"},
 			want: Config{URL: "http://p", PublicURL: "http://p", Username: "ann", Password: "pw", Transport: "stdio", Addr: ":8080", APIKeyIgnored: true},
 		},
-		{
-			name: "unexpanded MCPB placeholders count as unset",
+		"unexpanded MCPB placeholders count as unset": {
 			env: map[string]string{ //nolint:gosec // G101: MCPB placeholder strings, not credentials
 				"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k",
 				"PLANKA_USERNAME": "${user_config.planka_username}", "PLANKA_PASSWORD": "${user_config.planka_password}",
 			},
 			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
-		{
-			name:    "username without password",
+		"username without password": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_USERNAME": "ann"},
 			wantErr: "PLANKA_USERNAME and PLANKA_PASSWORD go together",
 		},
-		{
-			name:    "password without username",
+		"password without username": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k", "PLANKA_PASSWORD": "pw"},
 			wantErr: "PLANKA_USERNAME and PLANKA_PASSWORD go together",
 		},
-		{
-			name:    "http with login",
+		"http with login": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_MCP_TRANSPORT": "http", "PLANKA_USERNAME": "ann", "PLANKA_PASSWORD": "pw"},
 			wantErr: "PLANKA_USERNAME and PLANKA_PASSWORD must not be set in http mode: each client sends its own key",
 		},
-		{
-			name:    "http with key",
+		"http with key": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k", "PLANKA_MCP_TRANSPORT": "http"},
 			wantErr: "PLANKA_API_KEY must not be set in http mode: each client sends its own key",
 		},
-		{
-			name:    "unknown transport",
+		"unknown transport": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_MCP_TRANSPORT": "carrier-pigeon"},
 			wantErr: `unknown transport "carrier-pigeon"`,
 		},
-		{
-			name: "stdio defaults",
+		"stdio defaults": {
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k"},
 			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
-		{
-			name: "api key is trimmed",
+		"api key is trimmed": {
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k\n"},
 			want: Config{URL: "http://p", PublicURL: "http://p", APIKey: "k", Transport: "stdio", Addr: ":8080"},
 		},
-		{
-			name:    "blank api key counts as missing",
+		"blank api key counts as missing": {
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": " \n"},
 			wantErr: "stdio mode needs PLANKA_API_KEY, or PLANKA_USERNAME and PLANKA_PASSWORD",
 		},
-		{
-			name: "http from env",
+		"http from env": {
 			env:  map[string]string{"PLANKA_URL": "http://p", "PLANKA_MCP_TRANSPORT": "http", "PLANKA_MCP_ADDR": ":9000"},
 			want: Config{URL: "http://p", PublicURL: "http://p", Transport: "http", Addr: ":9000"},
 		},
-		{
-			name: "flags override env",
+		"flags override env": {
 			args: []string{"-transport", "http", "-addr", ":1234", "-url", "http://flag"},
 			env:  map[string]string{"PLANKA_URL": "http://env", "PLANKA_MCP_TRANSPORT": "stdio", "PLANKA_MCP_ADDR": ":9000"},
 			want: Config{URL: "http://flag", PublicURL: "http://flag", Transport: "http", Addr: ":1234"},
 		},
-		{
-			name:    "bad flag",
+		"bad flag": {
 			args:    []string{"-nope"},
 			env:     map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k"},
 			wantErr: "invalid flags",
 		},
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
+	for name, tt := range tests {
+		t.Run(name, func(t *testing.T) {
 			got, err := loadConfig(tt.args, env(tt.env))
 			if tt.wantErr != "" {
 				require.Error(t, err)

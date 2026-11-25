@@ -99,3 +99,15 @@ type CustomFieldsAPI interface {
 	SetCustomFieldValue(ctx context.Context, cardID, groupID, fieldID, content string) (*planka.CustomFieldValue, error)
 	ClearCustomFieldValue(ctx context.Context, cardID, groupID, fieldID string) error
 }
+
+// BoardWriteAPI creates, renames and deletes boards, manages their members,
+// and lists users.
+type BoardWriteAPI interface {
+	CreateBoard(ctx context.Context, projectID, name string, position float64) (*planka.Board, error)
+	UpdateBoard(ctx context.Context, id, name string) (*planka.Board, error)
+	DeleteBoard(ctx context.Context, id string) error
+	CreateBoardMembership(ctx context.Context, boardID string, r planka.BoardMembershipRequest) (*planka.BoardMembership, error)
+	UpdateBoardMembership(ctx context.Context, id string, r planka.BoardMembershipRequest) (*planka.BoardMembership, error)
+	DeleteBoardMembership(ctx context.Context, id string) error
+	Users(ctx context.Context) ([]planka.User, error)
+}

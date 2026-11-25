@@ -16,15 +16,15 @@ var version = "dev"
 // records a pseudo-version such as 0.0.0-20261020125636-5168b518c43f+dirty, which
 // says exactly which commit the binary came from.
 func buildVersion() string {
-	info, ok := debug.ReadBuildInfo()
-	return resolveVersion(version, info, ok)
+	info, _ := debug.ReadBuildInfo() // nil when there is none
+	return resolveVersion(version, info)
 }
 
-func resolveVersion(stamped string, info *debug.BuildInfo, ok bool) string {
+func resolveVersion(stamped string, info *debug.BuildInfo) string {
 	if stamped != "" && stamped != "dev" {
 		return stamped
 	}
-	if ok && info != nil {
+	if info != nil {
 		if v := info.Main.Version; v != "" && v != "(devel)" {
 			return strings.TrimPrefix(v, "v")
 		}

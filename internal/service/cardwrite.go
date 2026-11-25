@@ -181,7 +181,7 @@ func (c *Cards) Update(ctx context.Context, in UpdateCard) (*WriteResult, error)
 	patched := patch != (planka.UpdateCardRequest{})
 	if patched {
 		if _, err := c.write.UpdateCard(ctx, id, patch); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("changing the fields of card %s failed, so nothing was written: %w", id, err)
 		}
 	}
 	created, err := c.applyAssociations(ctx, snap, id, plan)

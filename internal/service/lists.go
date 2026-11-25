@@ -107,7 +107,7 @@ func (s *Lists) Create(ctx context.Context, in CreateList) (*ListResult, error) 
 	if err := checkListColor(in.Color, false); err != nil {
 		return nil, err
 	}
-	snap, unlock, err := s.lockBoard(ctx, in.Board)
+	snap, unlock, err := s.cards.lockBoardRef(ctx, in.Board)
 	if err != nil {
 		return nil, err
 	}
@@ -139,7 +139,7 @@ func (s *Lists) Update(ctx context.Context, in UpdateList) (*ListResult, error) 
 	if err := checkListUpdate(in); err != nil {
 		return nil, err
 	}
-	snap, unlock, err := s.lockBoard(ctx, in.Board)
+	snap, unlock, err := s.cards.lockBoardRef(ctx, in.Board)
 	if err != nil {
 		return nil, err
 	}
@@ -223,7 +223,7 @@ func (s *Lists) apply(
 // Delete deletes a list, found on board by ID or exact name. Planka moves its
 // cards to the board's trash.
 func (s *Lists) Delete(ctx context.Context, board, ref string) (*DeletedList, error) {
-	snap, unlock, err := s.lockBoard(ctx, board)
+	snap, unlock, err := s.cards.lockBoardRef(ctx, board)
 	if err != nil {
 		return nil, err
 	}
@@ -237,18 +237,6 @@ func (s *Lists) Delete(ctx context.Context, board, ref string) (*DeletedList, er
 		return nil, notFound("list", list.ID, err)
 	}
 	return &DeletedList{ID: list.ID, Name: listLabel(list), CardsToTrash: len(moved)}, nil
-}
-
-// lockBoard finds a board by ID, URL or name, then locks and reads it.
-func (s *Lists) lockBoard(ctx context.Context, board string) (*boardSnapshot, func(), error) {
-	if strings.TrimSpace(board) == "" {
-		return nil, nil, errors.New("board is empty")
-	}
-	br, err := s.cards.catalog.resolveBoard(ctx, board)
-	if err != nil {
-		return nil, nil, err
-	}
-	return s.cards.lockBoard(ctx, br.ID)
 }
 
 // written reads the board again and returns the list as it is now, with the

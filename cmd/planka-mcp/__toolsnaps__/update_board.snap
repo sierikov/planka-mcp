@@ -1,0 +1,28 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to rename a Planka board. Only a project manager can. Returns the board's id, name and project.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "name": {
+        "description": "new name; it must differ from the project's other boards",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "update_board",
+  "title": "Update board"
+}

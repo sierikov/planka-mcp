@@ -3,7 +3,7 @@
   "name": "planka-mcp",
   "display_name": "MCP server for Planka (unofficial)",
   "version": "0.0.0-dev",
-  "description": "Find, read and manage cards on your Planka v2 kanban boards: move them, comment, edit, tick off checklists, attach files and set custom fields.",
+  "description": "Find, read and manage cards on your Planka v2 kanban boards: move them, comment, edit, tick off checklists, attach files, set custom fields and manage boards and their members.",
   "author": {
     "name": "Artem Sierikov"
   },
@@ -135,6 +135,30 @@
     {
       "name": "delete_label",
       "description": "Delete a board label; one in use needs from_cards"
+    },
+    {
+      "name": "create_board",
+      "description": "Create a board in a project, with its lists"
+    },
+    {
+      "name": "update_board",
+      "description": "Rename a board"
+    },
+    {
+      "name": "delete_board",
+      "description": "Delete a board; one with cards needs with_cards"
+    },
+    {
+      "name": "add_board_member",
+      "description": "Give someone access to a board as editor or viewer"
+    },
+    {
+      "name": "update_board_member",
+      "description": "Change a board member's role"
+    },
+    {
+      "name": "remove_board_member",
+      "description": "Take someone's access to a board away"
     }
   ],
   "user_config": {

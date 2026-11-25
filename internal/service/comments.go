@@ -25,7 +25,8 @@ func NewComments(cards *Cards, api CommentsWriteAPI) *Comments {
 // whitespace-only text is an error. The comment comes back with the author's
 // name: the key's own user, found on the card's board or, when the user is not
 // a member of it, through Me. If that lookup fails the author is empty and the
-// call still succeeds, because the comment was posted.
+// call still succeeds: the comment was posted, and an error would invite a
+// retry that posts it twice.
 func (c *Comments) Add(ctx context.Context, ref CardRef, text string) (*Comment, error) {
 	if strings.TrimSpace(text) == "" {
 		return nil, errors.New("comment text is empty")
@@ -39,8 +40,6 @@ func (c *Comments) Add(ctx context.Context, ref CardRef, text string) (*Comment,
 		return nil, notFound("card", id, err)
 	}
 	out := toComment(cm)
-	// The comment exists now. A failed author lookup leaves the author empty
-	// rather than failing the call, which would invite a retry and a duplicate.
 	out.Author = c.author(ctx, snap, cm.UserID)
 	return &out, nil
 }

@@ -68,6 +68,16 @@ type CustomFieldService interface {
 	Set(ctx context.Context, ref service.CardRef, values map[string]string) ([]service.CustomFieldGroup, error)
 }
 
+// BoardService creates, renames and deletes boards, and manages their members.
+type BoardService interface {
+	Create(ctx context.Context, in service.CreateBoard) (*service.Board, error)
+	Rename(ctx context.Context, board, name string) (*service.BoardRef, error)
+	Delete(ctx context.Context, board string, withCards bool) (*service.DeletedBoard, error)
+	AddMember(ctx context.Context, in service.AddMember) (*service.Member, error)
+	UpdateMember(ctx context.Context, in service.UpdateMember) (*service.Member, error)
+	RemoveMember(ctx context.Context, board, person string) (*service.Member, error)
+}
+
 // Deps are the services the tools call. Every service is required.
 type Deps struct {
 	Catalog      CatalogService
@@ -78,6 +88,7 @@ type Deps struct {
 	Attachments  AttachmentService
 	Labels       LabelService
 	CustomFields CustomFieldService
+	Boards       BoardService
 
 	// PublicURL is the base of the card links in results ("" leaves them out).
 	PublicURL string

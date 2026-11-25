@@ -20,6 +20,7 @@ func registerWriteTools(server *mcp.Server, deps Deps, zone string) {
 	registerAttachmentTools(server, deps.Attachments, deps.Uploads)
 	registerLabelTools(server, deps.Labels)
 	registerCustomFieldTools(server, deps.CustomFields)
+	registerBoardTools(server, deps.Boards)
 }
 
 // deletedOut confirms a delete. Title is set for cards only.

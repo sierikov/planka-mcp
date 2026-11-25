@@ -318,9 +318,14 @@ func jsonResult(v any) (*mcp.CallToolResult, any, error) {
 // errorResult turns err into a tool result with IsError set. Failures are
 // results the model can act on, never protocol errors.
 func errorResult(err error) (*mcp.CallToolResult, any, error) {
+	text := errorText(err)
+	if strings.TrimSpace(text) == "" {
+		// An empty error leaves the model guessing and retrying blindly.
+		text = fmt.Sprintf("the call failed without an error message (%T): check with get_card whether anything changed before retrying", err)
+	}
 	return &mcp.CallToolResult{
 		IsError: true,
-		Content: []mcp.Content{&mcp.TextContent{Text: errorText(err)}},
+		Content: []mcp.Content{&mcp.TextContent{Text: text}},
 	}, nil, nil
 }
 

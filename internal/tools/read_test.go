@@ -128,6 +128,13 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"set_custom_fields": {"card", "fields"},
 		"update_label":      {"board", "label"},
 		"delete_label":      {"board", "label"},
+
+		"create_board":        {"project", "name"},
+		"update_board":        {"board", "name"},
+		"delete_board":        {"board"},
+		"add_board_member":    {"board", "person", "role"},
+		"update_board_member": {"board", "person"},
+		"remove_board_member": {"board", "person"},
 	}
 	for _, tool := range res.Tools {
 		assert.NotEmpty(t, tool.Description, tool.Name)

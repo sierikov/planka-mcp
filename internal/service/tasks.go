@@ -214,13 +214,13 @@ func (t *Tasks) resolveLinks(ctx context.Context, parentID, boardID string, item
 
 // linkID resolves one link; see resolveLinks.
 func (t *Tasks) linkID(ctx context.Context, link, parentID, boardID string) (string, error) {
-	id, found, err := t.cards.resolveTarget(ctx, CardRef{Ref: link, Board: boardID})
+	id, match, err := t.cards.resolveTarget(ctx, CardRef{Ref: link, Board: boardID})
 	var (
 		none *NoMatchError
 		desc *DescriptionMatchError
 	)
 	if errors.As(err, &none) || errors.As(err, &desc) {
-		id, found, err = t.cards.resolveTarget(ctx, CardRef{Ref: link})
+		id, match, err = t.cards.resolveTarget(ctx, CardRef{Ref: link})
 	}
 	if err != nil {
 		return "", err
@@ -228,7 +228,7 @@ func (t *Tasks) linkID(ctx context.Context, link, parentID, boardID string) (str
 	if id == parentID {
 		return "", errors.New("a task cannot link to its own card")
 	}
-	if found == nil { // an ID or URL: nothing has checked it yet
+	if match == nil { // an ID or URL: nothing has checked it yet
 		if _, err := t.cards.cards.Card(ctx, id); err != nil {
 			return "", notFound("card", id, err)
 		}

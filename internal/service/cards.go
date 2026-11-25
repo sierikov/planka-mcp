@@ -18,11 +18,11 @@ const (
 	maxCandidates = 10
 )
 
-// SearchQuery filters a card search. Text matches when every word of it is in
-// the title or every word of it is in the description (Planka's own rule, so
-// the archive agrees); words are split on spaces, commas and semicolons, and
-// case is ignored. Title matches come first. Words may not be split between
-// title and description. Every other non-empty field narrows the search.
+// SearchQuery filters a card search. Text matches a card when each of its
+// words starts a word of the title, or each starts a word of the description
+// (see atWordStart): words are split on spaces, commas and semicolons, case is
+// ignored, and words may not be split between title and description. Title
+// matches come first. Every other non-empty field narrows the search.
 // Board is an ID, a URL or a name; Project, List, Label and Assignee are
 // names, and Assignee may be "me". Due is one of DueFilters, counted in the
 // server's time zone: "overdue" is due before now and not marked done,
@@ -38,10 +38,9 @@ type SearchQuery struct {
 var DueFilters = []string{"overdue", "today", "this_week", "none"}
 
 // CardRef points at a card: Ref is a card ID, a card URL or a title (or part
-// of it). A title matches by the rule of SearchQuery.Text: all its words in a
-// card's title, or all in its description. Board narrows a title search to one
-// board. A title never resolves to an archived card unless IncludeArchived is
-// set.
+// of it), which matches by the rule of SearchQuery.Text. Board narrows a title
+// search to one board. A title never resolves to an archived card unless
+// IncludeArchived is set.
 type CardRef struct {
 	Ref, Board      string
 	IncludeArchived bool
@@ -176,6 +175,23 @@ func (c *Cards) lockBoard(ctx context.Context, boardID string) (*boardSnapshot, 
 		return nil, nil, err
 	}
 	return snap, unlock, nil
+}
+
+// lockBoardRef is lockBoard for a board given by ID, URL or name, as the
+// board-level writes take it.
+func (c *Cards) lockBoardRef(ctx context.Context, board string) (*boardSnapshot, func(), error) {
+	if strings.TrimSpace(board) == "" {
+		return nil, nil, errors.New("board is empty")
+	}
+	br, err := c.catalog.resolveBoard(ctx, board)
+	if err != nil {
+		return nil, nil, err
+	}
+	snap, unlock, err := c.lockBoard(ctx, br.ID)
+	if err == nil && snap.project == "" {
+		snap.project = br.Project
+	}
+	return snap, unlock, err
 }
 
 // cardBoardID reads a card to learn its board's ID.

@@ -86,7 +86,7 @@ func (s *Labels) Update(ctx context.Context, in UpdateLabel) (*LabelResult, erro
 	if err != nil {
 		return nil, err
 	}
-	snap, unlock, err := s.lockBoard(ctx, in.Board)
+	snap, unlock, err := s.cards.lockBoardRef(ctx, in.Board)
 	if err != nil {
 		return nil, err
 	}
@@ -121,7 +121,7 @@ func (s *Labels) Update(ctx context.Context, in UpdateLabel) (*LabelResult, erro
 // keeps no record of which, so a label still on cards is refused unless
 // fromCards is set; the result lists those cards.
 func (s *Labels) Delete(ctx context.Context, board, label string, fromCards bool) (*DeletedLabel, error) {
-	snap, unlock, err := s.lockBoard(ctx, board)
+	snap, unlock, err := s.cards.lockBoardRef(ctx, board)
 	if err != nil {
 		return nil, err
 	}
@@ -187,17 +187,6 @@ func (s *Labels) labelCards(ctx context.Context, snap *boardSnapshot, labelID st
 		return cards[:maxLabelCards], len(cards) - maxLabelCards, partial, nil
 	}
 	return cards, 0, partial, nil
-}
-
-func (s *Labels) lockBoard(ctx context.Context, board string) (*boardSnapshot, func(), error) {
-	if strings.TrimSpace(board) == "" {
-		return nil, nil, errors.New("board is empty")
-	}
-	br, err := s.cards.catalog.resolveBoard(ctx, board)
-	if err != nil {
-		return nil, nil, err
-	}
-	return s.cards.lockBoard(ctx, br.ID)
 }
 
 // checkLabelUpdate checks an update before anything is read, and returns the

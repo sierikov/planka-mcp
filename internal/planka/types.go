@@ -106,12 +106,14 @@ type CardMembership struct {
 	UserID string `json:"userId"`
 }
 
-// BoardMembership gives a user access to a board.
+// BoardMembership gives a user access to a board. Role is "editor" or
+// "viewer"; CanComment lets a viewer comment.
 type BoardMembership struct {
-	ID      string `json:"id"`
-	BoardID string `json:"boardId"`
-	UserID  string `json:"userId"`
-	Role    string `json:"role"`
+	ID         string `json:"id"`
+	BoardID    string `json:"boardId"`
+	UserID     string `json:"userId"`
+	Role       string `json:"role"`
+	CanComment *bool  `json:"canComment"`
 }
 
 // TaskList is a checklist on a card.

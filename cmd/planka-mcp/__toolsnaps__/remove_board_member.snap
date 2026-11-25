@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to take someone's access to a Planka board away. Only a project manager can, except that anyone can remove themselves (person=me), which ends their own access. Returns who was removed and their role.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "person": {
+        "description": "a member of the board: username, full name, or me",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "person"
+    ],
+    "type": "object"
+  },
+  "name": "remove_board_member",
+  "title": "Remove board member"
+}

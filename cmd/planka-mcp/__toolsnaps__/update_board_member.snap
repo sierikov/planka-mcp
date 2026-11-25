@@ -1,0 +1,46 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to change a Planka board member's role, or whether a viewer may comment. Only a project manager can. Returns the member.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "can_comment": {
+        "description": "let a viewer comment",
+        "type": [
+          "null",
+          "boolean"
+        ]
+      },
+      "person": {
+        "description": "a member of the board: username, full name, or me",
+        "type": "string"
+      },
+      "role": {
+        "description": "editor or viewer",
+        "enum": [
+          "editor",
+          "viewer"
+        ],
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    },
+    "required": [
+      "board",
+      "person"
+    ],
+    "type": "object"
+  },
+  "name": "update_board_member",
+  "title": "Update board member"
+}

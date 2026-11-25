@@ -36,7 +36,7 @@ type APIError struct {
 
 // Error implements error.
 func (e *APIError) Error() string {
-	return fmt.Sprintf("planka API %d: %s", e.Status, e.Body)
+	return fmt.Sprintf("Planka API %d: %s", e.Status, e.Body)
 }
 
 // StatusCode returns the HTTP status code. It lets callers detect 401/403
@@ -152,10 +152,12 @@ func truncate(s string) string {
 }
 
 // rawBody is a request body sent as it is, such as a multipart form. The bytes
-// stay in memory, so do can send them again after a re-login.
+// stay in memory, so do can send them again after a re-login. An upload gets
+// the longer time limit of uploadClient.
 type rawBody struct {
 	contentType string
 	data        []byte
+	upload      bool
 }
 
 // newRequest builds an authenticated request. A body is sent as JSON, unless
@@ -230,7 +232,7 @@ func (c *Client) send(ctx context.Context, cred credential, method, path string,
 	}
 
 	h := c.httpClient
-	if _, ok := body.(rawBody); ok {
+	if b, ok := body.(rawBody); ok && b.upload {
 		h = c.uploadClient
 	}
 	resp, err := h.Do(req)
@@ -264,7 +266,7 @@ func (c *Client) send(ctx context.Context, cred credential, method, path string,
 func redirectError(req *http.Request, resp *http.Response) error {
 	loc, err := resp.Location()
 	if err != nil {
-		return fmt.Errorf("planka answered with a redirect (HTTP %d) but no target: check PLANKA_URL", resp.StatusCode)
+		return fmt.Errorf("got a redirect (HTTP %d) without a target from Planka: check PLANKA_URL", resp.StatusCode)
 	}
 	target := loc.String()
 	base := "that address"
@@ -273,5 +275,5 @@ func redirectError(req *http.Request, resp *http.Response) error {
 		b.Path, b.RawPath, b.RawQuery, b.Fragment = prefix, "", "", ""
 		base = b.String()
 	}
-	return fmt.Errorf("planka redirected to %s (HTTP %d): set PLANKA_URL to %s", target, resp.StatusCode, base)
+	return fmt.Errorf("got redirected to %s (HTTP %d), so Planka is at another address: set PLANKA_URL to %s", target, resp.StatusCode, base)
 }

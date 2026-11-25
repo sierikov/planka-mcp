@@ -67,7 +67,7 @@ func TestDoMapsNon2xxToAPIError(t *testing.T) {
 	require.ErrorAs(t, err, &apiErr)
 	assert.Equal(t, http.StatusForbidden, apiErr.Status)
 	assert.Equal(t, http.StatusForbidden, apiErr.StatusCode())
-	assert.Contains(t, err.Error(), "planka API 403: ")
+	assert.Contains(t, err.Error(), "Planka API 403: ")
 	assert.Contains(t, apiErr.Body, "E_FORBIDDEN")
 }
 
@@ -177,7 +177,7 @@ func TestDoRefusesRedirects(t *testing.T) {
 					err := c.do(t.Context(), method, "/api/cards/1", nil, map[string]string{"text": "x"}, nil)
 
 					require.Error(t, err)
-					assert.Contains(t, err.Error(), fmt.Sprintf("planka redirected to %s/api/cards/1 (HTTP %d)", target.URL, status))
+					assert.Contains(t, err.Error(), fmt.Sprintf("got redirected to %s/api/cards/1 (HTTP %d)", target.URL, status))
 					assert.Contains(t, err.Error(), "set PLANKA_URL to "+target.URL)
 				})
 			}

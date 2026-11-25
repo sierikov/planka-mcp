@@ -39,7 +39,6 @@ type searchFilter struct {
 	q     SearchQuery
 	words []string
 	meID  string
-	named bool      // a board was named, so an unknown list or label is an error
 	now   time.Time // in the server's time zone, for the due filter
 }
 
@@ -55,10 +54,9 @@ type boardResult struct {
 	skipped error
 }
 
-// Search finds cards across the boards the user can see. Cards that match all
-// the words of the text in their title come before those that match in the
-// description, which InDescription marks; within a tier they follow board,
-// list and card order. more counts the matches the limit left out.
+// Search finds the cards that match q across the boards the user can see:
+// title matches, then description matches, which InDescription marks, each in
+// board, list and card order. more counts the matches the limit left out.
 func (c *Cards) Search(ctx context.Context, q SearchQuery) (cards []CardSummary, more int, err error) {
 	hits, more, err := c.search(ctx, q)
 	if err != nil {
@@ -91,7 +89,6 @@ func (c *Cards) search(ctx context.Context, q SearchQuery) ([]hit, int, error) {
 	f := searchFilter{
 		q:     q,
 		words: searchWords(q.Text),
-		named: q.Board != "",
 		now:   c.now(),
 	}
 	if normalize(q.Assignee) == "me" {
@@ -181,7 +178,7 @@ func (c *Cards) searchBoard(ctx context.Context, br BoardRef, idx int, f searchF
 	m, err := f.matcherFor(snap)
 	if err != nil {
 		var unknown *UnknownNameError
-		if !f.named && errors.As(err, &unknown) {
+		if f.q.Board == "" && errors.As(err, &unknown) { // with a board named, an unknown list or label is an error
 			return boardResult{skipped: err}, nil
 		}
 		return boardResult{}, err
@@ -276,10 +273,9 @@ func (f searchFilter) scan(view, owner *boardSnapshot, boardIdx int, m boardMatc
 	return hits
 }
 
-// tier is 0 when the title holds every word of the text, 1 when the
-// description does, and -1 when the card does not match. Planka's archive
-// search keeps the same rule with substrings, so its results pass through
-// this one too.
+// tier is 0 for a title match, 1 for a description match (see
+// SearchQuery.Text) and -1 for none. Planka's archive search matches
+// substrings, so its results pass through this rule too.
 func (f searchFilter) tier(c planka.Card) int {
 	switch {
 	case containsAll(strings.ToLower(c.Name), f.words):
