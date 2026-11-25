@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/url"
+	"strings"
 )
 
 // cursorTimeLayout is the ISO 8601 form Planka itself emits for timestamps.
@@ -54,6 +55,9 @@ func (c *Client) ListCards(ctx context.Context, listID string, q CardQuery) (*Ca
 	query := url.Values{}
 	if q.Search != "" {
 		query.Set("search", q.Search)
+	}
+	if len(q.LabelIDs) > 0 {
+		query.Set("labelIds", strings.Join(q.LabelIDs, ","))
 	}
 	if q.Before != nil {
 		query.Set("before[listChangedAt]", q.Before.ListChangedAt.UTC().Format(cursorTimeLayout))

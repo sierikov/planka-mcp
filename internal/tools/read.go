@@ -40,7 +40,7 @@ type getBoardInput struct {
 }
 
 type searchCardsInput struct {
-	Query           string `json:"query,omitempty" jsonschema:"words to find; optional, omit to list cards matching the filters"`
+	Query           string `json:"query,omitempty" jsonschema:"words to find, each at the start of a word (oma finds Omas, not Automated); optional, omit to list cards matching the filters"`
 	Board           string `json:"board,omitempty" jsonschema:"only this board (ID, URL or name)"`
 	Project         string `json:"project,omitempty" jsonschema:"only boards of this project, by name"`
 	List            string `json:"list,omitempty" jsonschema:"only this list, by name"`
@@ -92,8 +92,8 @@ func registerReadTools(server *mcp.Server, deps Deps) {
 		Name:  "search_cards",
 		Title: "Search cards",
 		Description: "Use this to find Planka cards by words and filters. " +
-			"A card matches when all words are in its title or all in its description, title matches first; returns compact card lines without descriptions, " +
-			"and how many more matched past the limit.",
+			"A card matches when each word starts a word in its title, or each in its description; title matches come first, in_description marks the rest. " +
+			"Returns compact card lines and how many more matched.",
 		Annotations: readOnly,
 		InputSchema: inputSchema[searchCardsInput](map[string][]string{"due": service.DueFilters}),
 	}, searchCards(deps.Cards))

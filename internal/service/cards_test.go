@@ -1017,3 +1017,44 @@ func TestSearchUnknownDueFilter(t *testing.T) {
 
 	require.EqualError(t, err, `unknown due "tomorrow": use overdue, today, this_week or none`)
 }
+
+func TestAtWordStart(t *testing.T) {
+	for _, tc := range []struct {
+		s, w string
+		want bool
+	}{
+		{"oma", "oma", true},
+		{"omas geburtstag", "oma", true},
+		{"termin: oma-termin", "termin", true},
+		{"arzt (oma)", "oma", true},
+		{"migrate calibre web automated", "oma", false},
+		{"workflow automatisch", "oma", false},
+		{"automated oma", "oma", true}, // a later occurrence at a word start counts
+		{"госпитализация бабушки", "госпитал", true},
+		{"не госпитализация", "питал", false},
+		{"über plan", "über", true},
+		{"release v0.4", "4", true},
+		{"readme.md", ".md", true}, // a word that starts with punctuation matches anywhere
+		{"北京会议", "会议", true},       // Chinese has no spaces between words
+		{"", "oma", false},
+	} {
+		assert.Equal(t, tc.want, atWordStart(tc.s, tc.w), "%q in %q", tc.w, tc.s)
+	}
+}
+
+func TestSearchMatchesAtWordStartsAndMarksDescriptionHits(t *testing.T) {
+	f := newCardsFixture(t)
+	b1 := synthBoard("b1", "pw", "B1",
+		spec{id: "c1", title: "Migrate Calibre Web Automated", list: "todo", pos: 1},
+		spec{id: "c2", title: "Omas Geburtstag", list: "todo", pos: 2},
+		spec{id: "c3", title: "Arzttermin", desc: "mit Oma", list: "todo", pos: 3},
+	)
+	f.serve(b1)
+
+	got, _, err := f.svc.Search(t.Context(), SearchQuery{Text: "oma", Board: "B1"})
+
+	require.NoError(t, err)
+	assert.Equal(t, []string{"Omas Geburtstag", "Arzttermin"}, titles(got))
+	assert.False(t, got[0].InDescription)
+	assert.True(t, got[1].InDescription)
+}

@@ -3,6 +3,7 @@ package service
 import (
 	"cmp"
 	"context"
+	"maps"
 	"slices"
 	"time"
 
@@ -110,86 +111,182 @@ func attachments(in []planka.Attachment, cover string) []Attachment {
 	return out
 }
 
-// customFields groups the card's field values by their group, the board's
-// groups before the card's own, groups and fields in Planka's position order.
-// A value's group is on the card or on the board, so both responses are looked
-// in. A group made from a project's base group takes its name and fields from
-// the base group, which only the projects listing carries: it is read only when
-// a value needs it, and a value whose names cannot be read keeps its content.
+// customFields groups the card's field values by their group, groups and
+// fields in Planka's order (see fieldCatalog). Each group also names its
+// fields that have no value on the card. A value whose names cannot be read,
+// because the projects listing failed, keeps its content.
 func (c *Cards) customFields(ctx context.Context, cr *planka.CardResponse, snap *boardSnapshot) []CustomFieldGroup {
-	values := cr.Included.CustomFieldValues
-	groups := map[string]planka.CustomFieldGroup{}
-	fields := map[string]planka.CustomField{}
-	for _, inc := range []struct {
-		groups []planka.CustomFieldGroup
-		fields []planka.CustomField
-	}{
-		{snap.resp.Included.CustomFieldGroups, snap.resp.Included.CustomFields},
-		{cr.Included.CustomFieldGroups, cr.Included.CustomFields},
-	} {
-		for _, g := range inc.groups {
-			groups[g.ID] = g
-		}
-		for _, f := range inc.fields {
-			fields[f.ID] = f
-		}
-	}
-
-	baseGroups := map[string]string{}
-	if needsBaseGroups(values, groups, fields) {
-		if resp, err := c.catalog.projects.Projects(ctx); err == nil {
-			for _, g := range resp.Included.BaseCustomFieldGroups {
-				baseGroups[g.ID] = g.Name
-			}
-			for _, f := range resp.Included.CustomFields {
-				fields[f.ID] = f
-			}
-		}
-	}
-
-	return groupFieldValues(values, groups, fields, baseGroups)
+	cat, _ := c.fieldCatalog(ctx, cr, snap)
+	return cat.groupValues(cr.Included.CustomFieldValues)
 }
 
-// groupFieldValues groups values by their group, the board's groups before the
-// card's own, groups and fields in Planka's position order. baseGroups names
-// the base groups by ID.
-func groupFieldValues(
-	values []planka.CustomFieldValue, groups map[string]planka.CustomFieldGroup,
-	fields map[string]planka.CustomField, baseGroups map[string]string,
-) []CustomFieldGroup {
-	byGroup := map[string][]planka.CustomFieldValue{}
-	var order []string
-	for _, v := range values {
-		if _, ok := byGroup[v.CustomFieldGroupID]; !ok {
-			order = append(order, v.CustomFieldGroupID)
-		}
-		byGroup[v.CustomFieldGroupID] = append(byGroup[v.CustomFieldGroupID], v)
-	}
-	slices.SortStableFunc(order, func(a, b string) int {
-		ga, gb := groups[a], groups[b]
-		return cmp.Or(cmp.Compare(onCard(ga), onCard(gb)), cmp.Compare(ga.Position, gb.Position), cmp.Compare(a, b))
-	})
+// fieldSlot is a custom field a card can have a value for: a field of one of
+// the board's groups or of the card's own groups.
+type fieldSlot struct {
+	group planka.CustomFieldGroup
+	field planka.CustomField
+}
 
-	out := make([]CustomFieldGroup, 0, len(order))
+// fieldCatalog is what Planka says about the custom fields of one card: its
+// groups and fields by ID, the names of the project base groups, and the
+// card's fields in order.
+type fieldCatalog struct {
+	groups    map[string]planka.CustomFieldGroup
+	fields    map[string]planka.CustomField
+	baseNames map[string]string
+	slots     []fieldSlot
+}
+
+// fieldCatalog collects the custom fields of the card cr on the board snap.
+// The groups are the board's and the card's own: the board's first, each by
+// position, and the fields of each by position. A group made from a project's
+// base group takes its fields, and its name when it has none, from the base
+// group, which only the projects listing carries: it is read only when a group
+// or a value needs it. If that read fails, the catalog lacks those fields and
+// the error says so.
+func (c *Cards) fieldCatalog(ctx context.Context, cr *planka.CardResponse, snap *boardSnapshot) (*fieldCatalog, error) {
+	cat := &fieldCatalog{groups: map[string]planka.CustomFieldGroup{}, fields: map[string]planka.CustomField{}, baseNames: map[string]string{}}
+	for _, g := range slices.Concat(snap.resp.Included.CustomFieldGroups, cr.Included.CustomFieldGroups) {
+		cat.groups[g.ID] = g
+	}
+	for _, f := range slices.Concat(snap.resp.Included.CustomFields, cr.Included.CustomFields) {
+		cat.fields[f.ID] = f
+	}
+	var err error
+	if cat.needsBaseGroups(cr.Included.CustomFieldValues) {
+		var resp *planka.ProjectsResponse
+		if resp, err = c.catalog.projects.Projects(ctx); err == nil {
+			for _, g := range resp.Included.BaseCustomFieldGroups {
+				cat.baseNames[g.ID] = g.Name
+			}
+			for _, f := range resp.Included.CustomFields {
+				cat.fields[f.ID] = f
+			}
+		}
+	}
+
+	groups := slices.Collect(maps.Values(cat.groups))
+	slices.SortFunc(groups, compareGroups)
+	fields := slices.Collect(maps.Values(cat.fields))
+	slices.SortFunc(fields, func(a, b planka.CustomField) int {
+		return cmp.Or(cmp.Compare(a.Position, b.Position), cmp.Compare(a.ID, b.ID))
+	})
+	for _, g := range groups {
+		for _, f := range fields {
+			if inGroup(f, g) {
+				cat.slots = append(cat.slots, fieldSlot{group: g, field: f})
+			}
+		}
+	}
+	return cat, err
+}
+
+// needsBaseGroups reports whether a group takes its fields from a base group,
+// or a value's field is unknown.
+func (cat *fieldCatalog) needsBaseGroups(values []planka.CustomFieldValue) bool {
+	for _, g := range cat.groups {
+		if g.BaseCustomFieldGroupID != nil {
+			return true
+		}
+	}
+	for _, v := range values {
+		if _, ok := cat.fields[v.CustomFieldID]; !ok {
+			return true
+		}
+	}
+	return false
+}
+
+// inGroup reports whether f is a field of g: of its base group, when g has one.
+func inGroup(f planka.CustomField, g planka.CustomFieldGroup) bool {
+	if g.BaseCustomFieldGroupID != nil {
+		return f.BaseCustomFieldGroupID != nil && *f.BaseCustomFieldGroupID == *g.BaseCustomFieldGroupID
+	}
+	return f.CustomFieldGroupID == g.ID
+}
+
+// compareGroups orders groups as Planka shows them: the board's before the
+// card's own, then by position.
+func compareGroups(a, b planka.CustomFieldGroup) int {
+	return cmp.Or(cmp.Compare(onCard(a), onCard(b)), cmp.Compare(a.Position, b.Position), cmp.Compare(a.ID, b.ID))
+}
+
+// groupName is a group's name, or its base group's.
+func (cat *fieldCatalog) groupName(g planka.CustomFieldGroup) string {
+	name := deref(g.Name)
+	if name == "" && g.BaseCustomFieldGroupID != nil {
+		name = cat.baseNames[*g.BaseCustomFieldGroupID]
+	}
+	return name
+}
+
+// slotName names a field as "Group / Field", or by the field alone when its
+// group has no name.
+func (cat *fieldCatalog) slotName(s fieldSlot) string {
+	if g := cat.groupName(s.group); g != "" {
+		return g + " / " + s.field.Name
+	}
+	return s.field.Name
+}
+
+// groupValues groups values by their group, in catalog order. A group lists
+// its fields with a value, then those without as Unset; a value of a field the
+// catalog lacks goes last in its group, with the name Planka gave, if any.
+func (cat *fieldCatalog) groupValues(values []planka.CustomFieldValue) []CustomFieldGroup {
+	byGroup := map[string]map[string]planka.CustomFieldValue{}
+	for _, v := range values {
+		if byGroup[v.CustomFieldGroupID] == nil {
+			byGroup[v.CustomFieldGroupID] = map[string]planka.CustomFieldValue{}
+		}
+		byGroup[v.CustomFieldGroupID][v.CustomFieldID] = v
+	}
+	var order []string
+	for _, s := range cat.slots {
+		if !slices.Contains(order, s.group.ID) {
+			order = append(order, s.group.ID)
+		}
+	}
+	for id := range byGroup {
+		if !slices.Contains(order, id) {
+			order = append(order, id)
+		}
+	}
+	slices.SortStableFunc(order, func(a, b string) int { return compareGroups(cat.groups[a], cat.groups[b]) })
+
+	var out []CustomFieldGroup
 	for _, id := range order {
-		vs := byGroup[id]
-		slices.SortStableFunc(vs, func(a, b planka.CustomFieldValue) int {
-			fa, fb := fields[a.CustomFieldID], fields[b.CustomFieldID]
-			return cmp.Or(cmp.Compare(fa.Position, fb.Position), cmp.Compare(a.CustomFieldID, b.CustomFieldID))
-		})
-		g := groups[id]
-		name := deref(g.Name)
-		if name == "" && g.BaseCustomFieldGroupID != nil {
-			name = baseGroups[*g.BaseCustomFieldGroupID]
+		if group := cat.group(id, byGroup[id]); len(group.Fields) > 0 || len(group.Unset) > 0 {
+			out = append(out, group)
 		}
-		group := CustomFieldGroup{Name: name, Fields: make([]CustomField, len(vs))}
-		for i, v := range vs {
-			f := fields[v.CustomFieldID]
-			group.Fields[i] = CustomField{Name: f.Name, Value: v.Content, ShowOnFrontOfCard: f.ShowOnFrontOfCard}
-		}
-		out = append(out, group)
 	}
 	return out
+}
+
+// group is the group id with the values vs of its fields, by field ID.
+func (cat *fieldCatalog) group(id string, vs map[string]planka.CustomFieldValue) CustomFieldGroup {
+	group := CustomFieldGroup{Name: cat.groupName(cat.groups[id])}
+	vs = maps.Clone(vs)
+	for _, s := range cat.slots {
+		if s.group.ID != id {
+			continue
+		}
+		if v, ok := vs[s.field.ID]; ok {
+			group.Fields = append(group.Fields, CustomField{Name: s.field.Name, Value: v.Content, ShowOnFrontOfCard: s.field.ShowOnFrontOfCard})
+			delete(vs, s.field.ID)
+		} else {
+			group.Unset = append(group.Unset, s.field.Name)
+		}
+	}
+	rest := slices.Collect(maps.Values(vs))
+	slices.SortFunc(rest, func(a, b planka.CustomFieldValue) int {
+		fa, fb := cat.fields[a.CustomFieldID], cat.fields[b.CustomFieldID]
+		return cmp.Or(cmp.Compare(fa.Position, fb.Position), cmp.Compare(a.CustomFieldID, b.CustomFieldID))
+	})
+	for _, v := range rest {
+		f := cat.fields[v.CustomFieldID]
+		group.Fields = append(group.Fields, CustomField{Name: f.Name, Value: v.Content, ShowOnFrontOfCard: f.ShowOnFrontOfCard})
+	}
+	return group
 }
 
 // onCard sorts a board's groups (0) before a card's own (1).
@@ -198,20 +295,6 @@ func onCard(g planka.CustomFieldGroup) int {
 		return 0
 	}
 	return 1
-}
-
-// needsBaseGroups reports whether a value's field is unknown, or its group takes
-// its name from a base group.
-func needsBaseGroups(values []planka.CustomFieldValue, groups map[string]planka.CustomFieldGroup, fields map[string]planka.CustomField) bool {
-	for _, v := range values {
-		if _, ok := fields[v.CustomFieldID]; !ok {
-			return true
-		}
-		if g := groups[v.CustomFieldGroupID]; g.Name == nil && g.BaseCustomFieldGroupID != nil {
-			return true
-		}
-	}
-	return false
 }
 
 // toComments converts a page of comments, cut to limit. Authors are the users

@@ -37,7 +37,7 @@
         "type": "string"
       },
       "create_labels": {
-        "description": "create the labels the board lacks (default false, so a typo is not made into a new label)",
+        "description": "create the labels the board lacks, each in a colour picked from its name (default false, so a typo is not made into a new label)",
         "type": "boolean"
       },
       "description": {

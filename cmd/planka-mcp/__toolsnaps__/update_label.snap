@@ -1,0 +1,86 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to rename or recolour a label on a Planka board; every card with it shows the change. Fields you leave out stay as they are. Returns the label (id, name, color) and cards_total, the cards on the board's lists that have it.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "color": {
+        "description": "new colour, one of Planka's label colours",
+        "enum": [
+          "muddy-grey",
+          "autumn-leafs",
+          "morning-sky",
+          "antique-blue",
+          "egg-yellow",
+          "desert-sand",
+          "dark-granite",
+          "fresh-salad",
+          "lagoon-blue",
+          "midnight-blue",
+          "light-orange",
+          "pumpkin-orange",
+          "light-concrete",
+          "sunny-grass",
+          "navy-blue",
+          "lilac-eyes",
+          "apricot-red",
+          "orange-peel",
+          "silver-glint",
+          "bright-moss",
+          "deep-ocean",
+          "summer-sky",
+          "berry-red",
+          "light-cocoa",
+          "grey-stone",
+          "tank-green",
+          "coral-green",
+          "sugar-plum",
+          "pink-tulip",
+          "shady-rust",
+          "wet-rock",
+          "wet-moss",
+          "turquoise-sea",
+          "lavender-fields",
+          "piggy-red",
+          "light-mud",
+          "gun-metal",
+          "modern-green",
+          "french-coast",
+          "sweet-lilac",
+          "red-burgundy",
+          "pirate-gold"
+        ],
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "label": {
+        "description": "the label to change, by exact name or ID",
+        "type": "string"
+      },
+      "name": {
+        "description": "new name; it must differ from the board's other labels",
+        "type": [
+          "null",
+          "string"
+        ]
+      }
+    },
+    "required": [
+      "board",
+      "label"
+    ],
+    "type": "object"
+  },
+  "name": "update_label",
+  "title": "Update label"
+}

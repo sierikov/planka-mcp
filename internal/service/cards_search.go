@@ -8,6 +8,8 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"unicode"
+	"unicode/utf8"
 
 	"golang.org/x/sync/errgroup"
 
@@ -55,8 +57,8 @@ type boardResult struct {
 
 // Search finds cards across the boards the user can see. Cards that match all
 // the words of the text in their title come before those that match in the
-// description; within a tier they follow board, list and card order. more
-// counts the matches the limit left out.
+// description, which InDescription marks; within a tier they follow board,
+// list and card order. more counts the matches the limit left out.
 func (c *Cards) Search(ctx context.Context, q SearchQuery) (cards []CardSummary, more int, err error) {
 	hits, more, err := c.search(ctx, q)
 	if err != nil {
@@ -65,6 +67,7 @@ func (c *Cards) Search(ctx context.Context, q SearchQuery) (cards []CardSummary,
 	cards = make([]CardSummary, len(hits))
 	for i, h := range hits {
 		cards[i] = h.CardSummary
+		cards[i].InDescription = h.tier == 1
 	}
 	return cards, more, nil
 }
@@ -274,8 +277,9 @@ func (f searchFilter) scan(view, owner *boardSnapshot, boardIdx int, m boardMatc
 }
 
 // tier is 0 when the title holds every word of the text, 1 when the
-// description does, and -1 when the card does not match. This is Planka's own
-// rule for the archive search, so local and server results agree.
+// description does, and -1 when the card does not match. Planka's archive
+// search keeps the same rule with substrings, so its results pass through
+// this one too.
 func (f searchFilter) tier(c planka.Card) int {
 	switch {
 	case containsAll(strings.ToLower(c.Name), f.words):
@@ -305,14 +309,43 @@ func archiveText(text string) string {
 	return text
 }
 
+// containsAll reports whether s holds every word, each where a word of s
+// starts (see atWordStart). s and words are lower case.
 func containsAll(s string, words []string) bool {
 	for _, w := range words {
-		if !strings.Contains(s, w) {
+		if !atWordStart(s, w) {
 			return false
 		}
 	}
 	return true
 }
+
+// atWordStart reports whether w is in s where a word of s starts: at the start
+// of s, or after a rune that is not a letter or digit. So "oma" finds "Oma",
+// "Omas" and "Oma-Termin" but not "Automated", and a prefix still matches. A
+// word that does not start with a letter or digit (".md"), or starts in a
+// script written without spaces between words (Chinese, Japanese, Thai),
+// matches anywhere.
+func atWordStart(s, w string) bool {
+	first, _ := utf8.DecodeRuneInString(w)
+	if w == "" || !isWordRune(first) || unicode.In(first, unicode.Han, unicode.Hiragana, unicode.Katakana, unicode.Thai) {
+		return strings.Contains(s, w)
+	}
+	for from := 0; ; {
+		i := strings.Index(s[from:], w)
+		if i < 0 {
+			return false
+		}
+		i += from
+		if prev, _ := utf8.DecodeLastRuneInString(s[:i]); i == 0 || !isWordRune(prev) {
+			return true
+		}
+		_, size := utf8.DecodeRuneInString(s[i:])
+		from = i + size
+	}
+}
+
+func isWordRune(r rune) bool { return unicode.IsLetter(r) || unicode.IsDigit(r) }
 
 // dueMatches says the card's due date fits the query's due filter.
 func (f searchFilter) dueMatches(c planka.Card) bool {

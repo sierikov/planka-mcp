@@ -1,0 +1,33 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this only when a label on a Planka board must go. Planka takes it off every card that has it, archived ones too, so a label in use is refused unless from_cards=true. To take a label off one card, use update_card remove_labels. Returns the deleted label and the cards it was taken off.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "from_cards": {
+        "description": "also take it off the cards that have it (default false: a label in use is refused)",
+        "type": "boolean"
+      },
+      "label": {
+        "description": "the label to delete, by exact name or ID",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "label"
+    ],
+    "type": "object"
+  },
+  "name": "delete_label",
+  "title": "Delete label"
+}

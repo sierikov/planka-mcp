@@ -124,6 +124,10 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"add_attachment":    {"card", "url"},
 		"update_attachment": {"card", "attachment"},
 		"delete_attachment": {"card", "attachment"},
+
+		"set_custom_fields": {"card", "fields"},
+		"update_label":      {"board", "label"},
+		"delete_label":      {"board", "label"},
 	}
 	for _, tool := range res.Tools {
 		assert.NotEmpty(t, tool.Description, tool.Name)
@@ -147,7 +151,7 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		}
 	}
 	require.NotNil(t, search)
-	assert.Contains(t, search.Description, "all")
+	assert.Contains(t, search.Description, "each word starts a word")
 	assert.Contains(t, search.Description, "description")
 }
 

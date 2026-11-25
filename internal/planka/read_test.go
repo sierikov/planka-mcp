@@ -212,3 +212,12 @@ func TestNotFoundIsAPIError404(t *testing.T) {
 	assert.Equal(t, http.StatusNotFound, apiErr.StatusCode())
 	assert.Contains(t, apiErr.Body, "E_NOT_FOUND")
 }
+
+func TestListCardsFiltersByLabels(t *testing.T) {
+	c, srv := newTestClient(t, map[string]any{"GET /api/lists/l1/cards": plankatest.Fixture(t, "list_cards_archive")})
+
+	_, err := c.ListCards(t.Context(), "l1", CardQuery{LabelIDs: []string{"5", "7"}})
+
+	require.NoError(t, err)
+	assert.Equal(t, "5,7", srv.Last().Query.Get("labelIds"))
+}

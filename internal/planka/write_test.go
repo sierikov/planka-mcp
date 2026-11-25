@@ -1,6 +1,7 @@
 package planka
 
 import (
+	"encoding/json"
 	"net/http"
 	"testing"
 	"time"
@@ -327,4 +328,40 @@ func TestWriteEscapesPathParams(t *testing.T) {
 	var apiErr *APIError
 	require.ErrorAs(t, err, &apiErr)
 	assert.Equal(t, http.StatusNotFound, apiErr.Status)
+}
+
+func TestUpdateAndDeleteLabel(t *testing.T) {
+	c, srv := newTestClient(t, map[string]any{
+		"PATCH /api/labels/l1":  json.RawMessage(`{"item":{"id":"l1","boardId":"b1","name":"bug","color":"berry-red","position":1}}`),
+		"DELETE /api/labels/l1": json.RawMessage(`{"item":{"id":"l1"}}`),
+	})
+
+	l, err := c.UpdateLabel(t.Context(), "l1", UpdateLabelRequest{Color: Some("berry-red")})
+	require.NoError(t, err)
+	assert.Equal(t, "berry-red", l.Color)
+	assert.JSONEq(t, `{"color":"berry-red"}`, string(srv.Last().Body))
+
+	_, err = c.UpdateLabel(t.Context(), "l1", UpdateLabelRequest{Name: Some("Bug"), Color: Some("pirate-gold")})
+	require.NoError(t, err)
+	assert.JSONEq(t, `{"name":"Bug","color":"pirate-gold"}`, string(srv.Last().Body))
+
+	require.NoError(t, c.DeleteLabel(t.Context(), "l1"))
+	assert.Equal(t, "DELETE /api/labels/l1", srv.Last().Method+" "+srv.Last().Path)
+}
+
+func TestSetAndClearCustomFieldValue(t *testing.T) {
+	path := "/api/cards/c1/custom-field-values/customFieldGroupId:g1:customFieldId:f1"
+	c, srv := newTestClient(t, map[string]any{
+		"PATCH " + path:  json.RawMessage(`{"item":{"id":"v1","cardId":"c1","customFieldGroupId":"g1","customFieldId":"f1","content":"2026-11-06"}}`),
+		"DELETE " + path: json.RawMessage(`{"item":{"id":"v1"}}`),
+	})
+
+	v, err := c.SetCustomFieldValue(t.Context(), "c1", "g1", "f1", "2026-11-06")
+	require.NoError(t, err)
+	assert.Equal(t, "2026-11-06", v.Content)
+	assert.Equal(t, "PATCH "+path, srv.Last().Method+" "+srv.Last().Path)
+	assert.JSONEq(t, `{"content":"2026-11-06"}`, string(srv.Last().Body))
+
+	require.NoError(t, c.ClearCustomFieldValue(t.Context(), "c1", "g1", "f1"))
+	assert.Equal(t, "DELETE "+path, srv.Last().Method+" "+srv.Last().Path)
 }

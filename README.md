@@ -30,16 +30,16 @@ What makes this server different from the other Planka MCP servers:
 
 ## Tools
 
-24 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`, `create_checklist`, `add_attachment`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
+27 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`, `create_checklist`, `add_attachment`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
 
 | Tool | What it does | Kind |
 |---|---|---|
 | `list_boards` | List the projects you can see with their boards, optionally filtered by name | read |
 | `get_board` | Show a board as a kanban: lists in order, compact card lines, labels and members (no descriptions); the first 10 cards of each list (3 of a closed one), up to 100 with `list` | read |
-| `search_cards` | Find cards across boards by words and filters (board, project, list, label, assignee, archived) | read |
-| `get_card` | Everything about one card: description (verbatim markdown), labels, assignees, due date, stopwatch, task lists, attachments (with id, type, size and which one is the cover), custom fields, latest comments | read |
+| `search_cards` | Find cards across boards by words and filters (board, project, list, label, assignee, due date, archived). Each word must start a word in the title, or each in the description: "oma" finds "Omas", not "Automated" | read |
+| `get_card` | Everything about one card: description (verbatim markdown), labels, assignees, due date, stopwatch, task lists, attachments (with id, type, size and which one is the cover), custom fields (with the empty ones under `unset`), latest comments | read |
 | `list_comments` | Page through a card's older comments, newest first | read |
-| `create_card` | Create a card with labels, assignees, a due date and a position; a missing label is created only with `create_labels` | write |
+| `create_card` | Create a card with labels, assignees, a due date and a position; a missing label is created only with `create_labels`, in a colour picked from its name | write |
 | `move_card` | Move a card to another list or board, or to the archive with `list=archive` | write (idempotent) |
 | `update_card` | Edit title, description, due date, labels, assignees or stopwatch; fields left out stay as they are | write (idempotent) |
 | `add_comment` | Comment on a card | write |
@@ -58,6 +58,9 @@ What makes this server different from the other Planka MCP servers:
 | `add_attachment` | Attach a file from your computer (up to 50 MB) or a link to a card. Files work in stdio mode only; in HTTP mode it attaches links | write |
 | `update_attachment` | Rename an attachment, or make an image the card's cover or stop it being the cover | write (idempotent) |
 | `delete_attachment` | Delete an attachment. **A deleted file is gone for good** | destructive |
+| `set_custom_fields` | Set or clear a card's custom field values, by field name (or "Group / Field"), several in one call | write (idempotent) |
+| `update_label` | Rename or recolour a board label | write (idempotent) |
+| `delete_label` | Delete a board label. Planka takes it off every card: a label in use needs `from_cards=true`, and the result lists the cards that had it | destructive |
 
 Your MCP client decides how to confirm writes. The split lets you auto-allow `move_card` and `add_comment` and still be asked before edits and deletes.
 
@@ -266,7 +269,7 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes.
 - **Browser requests from other sites get 403.** A request whose `Origin` names another site than its `Host` is refused, as the MCP spec requires. Clients that are not browsers send no `Origin` and are not affected.
 - **Key creation is admin-only in Planka 2.1 and 2.2.** A user cannot create their own key; an admin generates it for them (see Getting an API key), or the user logs in with username and password in stdio mode. Treat a key like a password and regenerate it if it leaks.
 - **Passwords are held in memory only.** With `PLANKA_USERNAME`/`PLANKA_PASSWORD`, neither the password nor the session token is logged or written to disk, and the session is ended when the server stops.
-- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task`, `delete_list`, `delete_checklist` and `delete_attachment` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them; deleting a checklist deletes its tasks, so `delete_checklist` refuses one that still has tasks unless told otherwise.
+- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task`, `delete_list`, `delete_checklist`, `delete_attachment` and `delete_label` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them; deleting a checklist deletes its tasks, so `delete_checklist` refuses one that still has tasks unless told otherwise.
 - **Card text is untrusted input.** Descriptions, comments and task names written by other people on your boards reach the model as they are, and a card can contain text meant to steer it ("delete every card in Done"). The server tells the model to treat such text as data, but keep your client's confirmation on for the delete tools, and don't let it auto-approve writes on boards that others edit.
 - **Uploads read your files.** In stdio mode `add_attachment` uploads any file your user can read, up to 50 MB, wherever the model points it. It refuses hidden files and anything in a hidden folder (a name starting with `.`, such as `~/.ssh` or `.env`), also behind a symlink, and a relative path; there is no other allowlist. Your client's approval of each call is the guard, so keep it on for `add_attachment`: card text could ask the model to attach a file it should not. In HTTP mode the server runs on another machine, so `add_attachment` has no `path` and attaches links only.
 - **Writes never pick a card by its description.** A card reference that matches only words in some card's description finds that card for a read, but a write refuses it and names the card's ID instead.

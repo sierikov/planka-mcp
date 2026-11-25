@@ -217,7 +217,7 @@ func (c *Cards) applyAssociations(ctx context.Context, snap *boardSnapshot, card
 			continue
 		}
 		pos := bottomPosition(positions)
-		l, err := c.labels.CreateLabel(ctx, snap.resp.Item.ID, add.create, defaultLabelColor, pos)
+		l, err := c.labels.CreateLabel(ctx, snap.resp.Item.ID, add.create, labelColorFor(add.create), pos)
 		if err != nil {
 			return created, fmt.Errorf("create label %q: %w", add.create, err)
 		}

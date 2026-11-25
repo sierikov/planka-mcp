@@ -57,14 +57,27 @@ type AttachmentService interface {
 	Delete(ctx context.Context, card service.CardRef, attachment string) (*service.Attachment, error)
 }
 
+// LabelService changes and deletes the labels of a board.
+type LabelService interface {
+	Update(ctx context.Context, in service.UpdateLabel) (*service.LabelResult, error)
+	Delete(ctx context.Context, board, label string, fromCards bool) (*service.DeletedLabel, error)
+}
+
+// CustomFieldService sets and clears a card's custom field values.
+type CustomFieldService interface {
+	Set(ctx context.Context, ref service.CardRef, values map[string]string) ([]service.CustomFieldGroup, error)
+}
+
 // Deps are the services the tools call. Every service is required.
 type Deps struct {
-	Catalog     CatalogService
-	Cards       CardService
-	Comments    CommentService
-	Tasks       TaskService
-	Lists       ListService
-	Attachments AttachmentService
+	Catalog      CatalogService
+	Cards        CardService
+	Comments     CommentService
+	Tasks        TaskService
+	Lists        ListService
+	Attachments  AttachmentService
+	Labels       LabelService
+	CustomFields CustomFieldService
 
 	// PublicURL is the base of the card links in results ("" leaves them out).
 	PublicURL string

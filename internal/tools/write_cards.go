@@ -18,7 +18,7 @@ type createCardInput struct {
 	Title        string   `json:"title" jsonschema:"card title"`
 	Description  string   `json:"description,omitempty" jsonschema:"card description (markdown)"`
 	Labels       []string `json:"labels,omitempty" jsonschema:"label names; a name the board lacks is an error unless create_labels is set"`
-	CreateLabels bool     `json:"create_labels,omitempty" jsonschema:"create the labels the board lacks (default false, so a typo is not made into a new label)"`
+	CreateLabels bool     `json:"create_labels,omitempty" jsonschema:"create the labels the board lacks, each in a colour picked from its name (default false, so a typo is not made into a new label)"`
 	Assignees    []string `json:"assignees,omitempty" jsonschema:"people to assign, by name; \"me\" is you"`
 	Due          string   `json:"due,omitempty" jsonschema:"due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339"`
 	Position     string   `json:"position,omitempty" jsonschema:"top (default) or bottom of the list"`
@@ -40,7 +40,7 @@ type updateCardInput struct {
 	Due             *string  `json:"due,omitempty" jsonschema:"due date: YYYY-MM-DD, YYYY-MM-DD HH:MM or RFC 3339, or null/empty string to clear"`
 	DueCompleted    *bool    `json:"due_completed,omitempty" jsonschema:"mark the due date done (true) or not done (false)"`
 	AddLabels       []string `json:"add_labels,omitempty" jsonschema:"label names to add; a name the board lacks is an error unless create_labels is set"`
-	CreateLabels    bool     `json:"create_labels,omitempty" jsonschema:"create the labels the board lacks (default false, so a typo is not made into a new label)"`
+	CreateLabels    bool     `json:"create_labels,omitempty" jsonschema:"create the labels the board lacks, each in a colour picked from its name (default false, so a typo is not made into a new label)"`
 	RemoveLabels    []string `json:"remove_labels,omitempty" jsonschema:"label names to remove"`
 	AddAssignees    []string `json:"add_assignees,omitempty" jsonschema:"people to assign, by name; \"me\" is you"`
 	RemoveAssignees []string `json:"remove_assignees,omitempty" jsonschema:"people to unassign, by name"`

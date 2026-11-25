@@ -32,6 +32,8 @@ type List struct {
 }
 
 // CardSummary is the short form of a card. It never carries the description.
+// InDescription is set by Search on a card that matched only in its
+// description.
 type CardSummary struct {
 	ID, Title, Board, List string
 	Labels, Assignees      []string
@@ -39,6 +41,7 @@ type CardSummary struct {
 	DueCompleted           bool
 	TasksDone, TasksTotal  int
 	CommentsTotal          int
+	InDescription          bool
 }
 
 // Card is the full form of a card.
@@ -93,11 +96,13 @@ type Attachment struct {
 	Cover               bool
 }
 
-// CustomFieldGroup is a group of custom fields that have values on a card.
-// Name is empty when Planka's answer did not name it.
+// CustomFieldGroup is a group of custom fields of a card: Fields have a
+// value, Unset names the fields that have none. Name is empty when Planka's
+// answer did not name the group.
 type CustomFieldGroup struct {
 	Name   string
 	Fields []CustomField
+	Unset  []string
 }
 
 // CustomField is a custom field's value on a card, verbatim: Planka stores

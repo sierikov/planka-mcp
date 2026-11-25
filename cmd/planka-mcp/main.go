@@ -103,12 +103,14 @@ func newDeps(c *planka.Client, publicURL string, uploads bool) tools.Deps {
 	catalog := service.NewCatalog(c, c)
 	cards := service.NewCards(catalog, c, c, c, c, c, c, c)
 	return tools.Deps{
-		Catalog:     catalog,
-		Cards:       cards,
-		Comments:    service.NewComments(cards, c),
-		Tasks:       service.NewTasks(cards, c),
-		Lists:       service.NewLists(cards, c),
-		Attachments: service.NewAttachments(cards, c, uploads),
+		Catalog:      catalog,
+		Cards:        cards,
+		Comments:     service.NewComments(cards, c),
+		Tasks:        service.NewTasks(cards, c),
+		Lists:        service.NewLists(cards, c),
+		Attachments:  service.NewAttachments(cards, c, uploads),
+		Labels:       service.NewLabels(cards, c),
+		CustomFields: service.NewCustomFields(cards, c),
 
 		PublicURL: publicURL,
 		Uploads:   uploads,

@@ -87,3 +87,15 @@ type AttachmentsAPI interface {
 	UpdateAttachment(ctx context.Context, id, name string) (*planka.Attachment, error)
 	DeleteAttachment(ctx context.Context, id string) error
 }
+
+// BoardLabelsAPI changes and deletes board labels.
+type BoardLabelsAPI interface {
+	UpdateLabel(ctx context.Context, id string, r planka.UpdateLabelRequest) (*planka.Label, error)
+	DeleteLabel(ctx context.Context, id string) error
+}
+
+// CustomFieldsAPI sets and clears a card's custom field values.
+type CustomFieldsAPI interface {
+	SetCustomFieldValue(ctx context.Context, cardID, groupID, fieldID, content string) (*planka.CustomFieldValue, error)
+	ClearCustomFieldValue(ctx context.Context, cardID, groupID, fieldID string) error
+}

@@ -242,6 +242,51 @@ func (c *Client) CreateLabel(ctx context.Context, boardID, name, color string, p
 	return send[Label](ctx, c, http.MethodPost, "/api/boards/"+pathParam(boardID)+"/labels", body)
 }
 
+// UpdateLabelRequest is the body of PATCH /api/labels/:id. Only the fields that
+// are Set are sent.
+type UpdateLabelRequest struct {
+	Name  Optional[string]
+	Color Optional[string]
+}
+
+// MarshalJSON emits only the Set fields.
+func (r UpdateLabelRequest) MarshalJSON() ([]byte, error) {
+	m := map[string]any{}
+	put(m, "name", r.Name)
+	put(m, "color", r.Color)
+	return json.Marshal(m)
+}
+
+// UpdateLabel renames or recolours a board label.
+func (c *Client) UpdateLabel(ctx context.Context, id string, r UpdateLabelRequest) (*Label, error) {
+	return send[Label](ctx, c, http.MethodPatch, "/api/labels/"+pathParam(id), r)
+}
+
+// DeleteLabel deletes a board label. Planka takes it off every card that has
+// it.
+func (c *Client) DeleteLabel(ctx context.Context, id string) error {
+	return c.do(ctx, http.MethodDelete, "/api/labels/"+pathParam(id), nil, nil, nil)
+}
+
+// customFieldValuePath addresses a card's value of a field in a group. Planka
+// puts both IDs into one path segment.
+func customFieldValuePath(cardID, groupID, fieldID string) string {
+	return "/api/cards/" + pathParam(cardID) + "/custom-field-values/customFieldGroupId:" + pathParam(groupID) +
+		":customFieldId:" + pathParam(fieldID)
+}
+
+// SetCustomFieldValue sets a card's value of a custom field in a group,
+// creating or replacing it.
+func (c *Client) SetCustomFieldValue(ctx context.Context, cardID, groupID, fieldID, content string) (*CustomFieldValue, error) {
+	body := map[string]string{"content": content}
+	return send[CustomFieldValue](ctx, c, http.MethodPatch, customFieldValuePath(cardID, groupID, fieldID), body)
+}
+
+// ClearCustomFieldValue deletes a card's value of a custom field in a group.
+func (c *Client) ClearCustomFieldValue(ctx context.Context, cardID, groupID, fieldID string) error {
+	return c.do(ctx, http.MethodDelete, customFieldValuePath(cardID, groupID, fieldID), nil, nil, nil)
+}
+
 // CreateComment adds a comment to a card.
 func (c *Client) CreateComment(ctx context.Context, cardID, text string) (*Comment, error) {
 	body := map[string]string{"text": text}

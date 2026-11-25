@@ -15,8 +15,6 @@ const (
 	positionGap = 65536
 	// archivePosition is the position of a card sent to the archive.
 	archivePosition = positionGap
-	// defaultLabelColor colours the labels a write has to create.
-	defaultLabelColor = "muddy-grey"
 )
 
 // topPosition is the position that puts a card before every one of existing:

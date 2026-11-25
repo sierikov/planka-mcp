@@ -4,7 +4,7 @@
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "Use this to find Planka cards by words and filters. A card matches when all words are in its title or all in its description, title matches first; returns compact card lines without descriptions, and how many more matched past the limit.",
+  "description": "Use this to find Planka cards by words and filters. A card matches when each word starts a word in its title, or each in its description; title matches come first, in_description marks the rest. Returns compact card lines and how many more matched.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {
@@ -47,7 +47,7 @@
         "type": "string"
       },
       "query": {
-        "description": "words to find; optional, omit to list cards matching the filters",
+        "description": "words to find, each at the start of a word (oma finds Omas, not Automated); optional, omit to list cards matching the filters",
         "type": "string"
       }
     },

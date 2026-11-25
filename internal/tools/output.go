@@ -29,6 +29,8 @@ type cardLine struct {
 	Tasks     string   `json:"tasks,omitempty"`
 	// CommentsTotal is how many comments the card has; card lines leave out 0.
 	CommentsTotal int `json:"comments_total,omitzero"`
+	// InDescription marks a search hit that matched only in its description.
+	InDescription bool `json:"in_description,omitzero"`
 }
 
 type projectOut struct {
@@ -79,11 +81,13 @@ type cardOut struct {
 	Hint string `json:"hint,omitempty"`
 }
 
-// customFieldGroupOut is a group of custom fields with values, in Planka's
-// order. Group is left out when Planka's answer did not name the group.
+// customFieldGroupOut is a group of custom fields, in Planka's order: the
+// fields with a value, and unset, the names of those without. Group is left
+// out when Planka's answer did not name the group.
 type customFieldGroupOut struct {
 	Group  string           `json:"group,omitempty"`
-	Fields []customFieldOut `json:"fields"`
+	Fields []customFieldOut `json:"fields,omitempty"`
+	Unset  []string         `json:"unset,omitempty"`
 }
 
 // customFieldOut is one field's value, verbatim: Planka stores plain text.
@@ -169,6 +173,7 @@ func toCardLine(c service.CardSummary) cardLine {
 	line := cardLine{
 		ID: c.ID, Title: c.Title, Board: c.Board, List: c.List,
 		Labels: c.Labels, Assignees: c.Assignees, DueDone: c.DueCompleted, CommentsTotal: c.CommentsTotal,
+		InDescription: c.InDescription,
 	}
 	if c.Due != nil {
 		line.Due = formatDate(*c.Due)
@@ -231,13 +236,7 @@ func toCardOut(c *service.Card) cardOut {
 	for _, a := range c.Attachments {
 		out.Attachments = append(out.Attachments, toAttachmentOut(a))
 	}
-	for _, g := range c.CustomFields {
-		group := customFieldGroupOut{Group: g.Name, Fields: make([]customFieldOut, len(g.Fields))}
-		for i, f := range g.Fields {
-			group.Fields[i] = customFieldOut{Name: f.Name, Value: f.Value, ShowOnFrontOfCard: f.ShowOnFrontOfCard}
-		}
-		out.CustomFields = append(out.CustomFields, group)
-	}
+	out.CustomFields = toCustomFieldGroups(c.CustomFields)
 	return out
 }
 
@@ -396,4 +395,16 @@ func unknownNameText(e *service.UnknownNameError) string {
 		text += "; " + e.Hint
 	}
 	return text
+}
+
+func toCustomFieldGroups(groups []service.CustomFieldGroup) []customFieldGroupOut {
+	out := make([]customFieldGroupOut, 0, len(groups))
+	for _, g := range groups {
+		group := customFieldGroupOut{Group: g.Name, Unset: g.Unset}
+		for _, f := range g.Fields {
+			group.Fields = append(group.Fields, customFieldOut{Name: f.Name, Value: f.Value, ShowOnFrontOfCard: f.ShowOnFrontOfCard})
+		}
+		out = append(out, group)
+	}
+	return out
 }

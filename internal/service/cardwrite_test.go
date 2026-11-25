@@ -213,7 +213,7 @@ func TestUpdateAddsMissingLabelWithDefaultColor(t *testing.T) {
 		planka.Label{ID: "b1-research2", BoardID: "b1", Name: ptr("research2"), Position: 65538})
 	after.Included.CardLabels = append(after.Included.CardLabels, planka.CardLabel{CardID: "c1", LabelID: "b1-research2"})
 	f.serveWrite(writeBoard(), after)
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "research2", "muddy-grey", 65538.0).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "research2", labelColorFor("research2"), 65538.0).
 		Return(&planka.Label{ID: "b1-research2", Name: ptr("research2")}, nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "c1", "b1-research2").Return(nil).Once()
 
@@ -300,7 +300,7 @@ func TestUpdateWriteOrder(t *testing.T) {
 	note := func(s string) { order = append(order, s) }
 	f.write.EXPECT().UpdateCard(mock.Anything, "c1", mock.Anything).Return(&planka.Card{}, nil).
 		Run(func(context.Context, string, planka.UpdateCardRequest) { note("fields") }).Once()
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "fresh", "muddy-grey", mock.Anything).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "fresh", labelColorFor("fresh"), mock.Anything).
 		Return(&planka.Label{ID: "l-fresh"}, nil).
 		Run(func(context.Context, string, string, string, float64) { note("create label") }).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "c1", "b1-ui").Return(nil).
@@ -463,7 +463,7 @@ func TestCreateAutoCreatesLabels(t *testing.T) {
 	f.write.EXPECT().CreateCard(mock.Anything, "b1-doing", planka.CreateCardRequest{
 		Type: "project", Position: 65736, Name: "Fresh", Description: ptr("Details"), DueDate: &due,
 	}).Return(&planka.Card{ID: "n1"}, nil).Once()
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "research2", "muddy-grey", 65538.0).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "research2", labelColorFor("research2"), 65538.0).
 		Return(&planka.Label{ID: "l-new"}, nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "n1", "b1-bug").Return(nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "n1", "l-new").Return(nil).Once()
@@ -562,7 +562,7 @@ func onlyBugfix() *planka.BoardResponse {
 func TestUpdateAddLabelDoesNotPrefixMatch(t *testing.T) {
 	f := newCardsFixture(t)
 	f.serveWrite(onlyBugfix(), onlyBugfix())
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "bug", "muddy-grey", 65537.0).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "bug", labelColorFor("bug"), 65537.0).
 		Return(&planka.Label{ID: "l-bug"}, nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "c1", "l-bug").Return(nil).Once()
 
@@ -579,7 +579,7 @@ func TestCreateLabelDoesNotPrefixMatch(t *testing.T) {
 	f.boards.EXPECT().Board(mock.Anything, "b1").Return(onlyBugfix(), nil).Once()
 	f.boards.EXPECT().Board(mock.Anything, "b1").Return(after, nil).Once()
 	f.write.EXPECT().CreateCard(mock.Anything, "b1-todo", mock.Anything).Return(&planka.Card{ID: "n1"}, nil).Once()
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "BUG", "muddy-grey", 65537.0).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "BUG", labelColorFor("BUG"), 65537.0).
 		Return(&planka.Label{ID: "l-bug"}, nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "n1", "l-bug").Return(nil).Once()
 
@@ -735,7 +735,7 @@ func TestUpdateFailureAfterWritesSaysWhatWasApplied(t *testing.T) {
 	f.projects.EXPECT().Projects(mock.Anything).Return(synthProjects(), nil)
 	f.boards.EXPECT().Board(mock.Anything, "b1").Return(writeBoard(), nil).Times(2)
 	f.updated(planka.UpdateCardRequest{Name: planka.Some("Renamed")})
-	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "fresh", "muddy-grey", mock.Anything).
+	f.labels.EXPECT().CreateLabel(mock.Anything, "b1", "fresh", labelColorFor("fresh"), mock.Anything).
 		Return(&planka.Label{ID: "l-fresh"}, nil).Once()
 	f.labels.EXPECT().AddCardLabel(mock.Anything, "c1", "l-fresh").Return(errors.New("boom")).Once()
 

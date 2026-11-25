@@ -296,6 +296,8 @@ type CommentsResponse struct {
 type CardQuery struct {
 	// Search is a case-insensitive text filter (Planka caps it at 128 characters).
 	Search string
+	// LabelIDs keeps the cards that have any of these labels.
+	LabelIDs []string
 	// Before is the cursor of the last card of the previous page.
 	Before *CardCursor
 }

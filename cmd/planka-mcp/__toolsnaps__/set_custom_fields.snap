@@ -1,0 +1,35 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to set or clear the values of a Planka card's custom fields, several in one call. The fields must exist on the card or its board; get_card lists them, the empty ones under unset. Values are plain text. Returns the card's custom fields.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "fields": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "field name (or \"Group / Field\" when the name is in several groups) to its new value; an empty value clears the field",
+        "type": "object"
+      }
+    },
+    "required": [
+      "card",
+      "fields"
+    ],
+    "type": "object"
+  },
+  "name": "set_custom_fields",
+  "title": "Set custom fields"
+}

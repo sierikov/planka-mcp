@@ -265,6 +265,20 @@ func (s *boardSnapshot) cardsIn(listID string) []CardSummary {
 }
 
 // board returns the domain board with every kanban list.
+// cardsWithLabel is the cards in the board's lists that have the label, in
+// board order.
+func (s *boardSnapshot) cardsWithLabel(labelID string) []CardSummary {
+	var out []CardSummary
+	for _, l := range s.kanbanLists() {
+		for _, c := range s.cardsIn(l.ID) {
+			if slices.Contains(s.cardLabel[c.ID], labelID) {
+				out = append(out, c)
+			}
+		}
+	}
+	return out
+}
+
 func (s *boardSnapshot) board() *Board {
 	return s.boardOf(s.kanbanLists())
 }

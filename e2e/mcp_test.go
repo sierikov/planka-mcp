@@ -135,8 +135,11 @@ type (
 		URL       string   `json:"url"`
 	}
 	searchResult struct {
-		Cards []cardLine `json:"cards"`
-		More  int        `json:"more"`
+		Cards []struct {
+			cardLine
+			InDescription bool `json:"in_description"`
+		} `json:"cards"`
+		More int `json:"more"`
 	}
 	commentsResult struct {
 		Comments []comment `json:"comments"`
@@ -194,6 +197,7 @@ type (
 			Value             string `json:"value"`
 			ShowOnFrontOfCard bool   `json:"show_on_front_of_card"`
 		} `json:"fields"`
+		Unset []string `json:"unset"`
 	}
 	cardDetail struct {
 		cardLine
