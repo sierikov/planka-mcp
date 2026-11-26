@@ -58,8 +58,8 @@ func httpHarnessWith(t *testing.T, logger *slog.Logger, extra map[string]any, ke
 		routes[k] = v
 	}
 	fake = plankatest.NewServer(t, routes, plankatest.WithKeys(keys...))
-	client := planka.NewClient(fake.URL)
-	server := tools.NewServer(newDeps(client, "", false), "test") // as runHTTP: no uploads
+	client := planka.NewClient(fake.URL, planka.WithRemoteCallers()) // as runHTTP
+	server := tools.NewServer(newDeps(client, "", false), "test")    // as runHTTP: no uploads
 	srv = httptest.NewServer(newHTTPHandler(server, logger))
 	t.Cleanup(srv.Close)
 	return srv, fake
@@ -348,4 +348,23 @@ func TestCrossOriginBrowserRequestIs403(t *testing.T) {
 		})
 	}
 	assert.Empty(t, fake.Requests(), "no request without a key reaches Planka")
+}
+
+// TestHTTPCallersDoNotLearnPlankasAddress: when Planka is down, a remote caller
+// is told so without the internal address PLANKA_URL points at.
+func TestHTTPCallersDoNotLearnPlankasAddress(t *testing.T) {
+	down := httptest.NewServer(http.NotFoundHandler())
+	downURL := down.URL
+	down.Close()
+	client := planka.NewClient(downURL, planka.WithRemoteCallers())
+	srv := httptest.NewServer(newHTTPHandler(tools.NewServer(newDeps(client, "", false), "test"), discardLogger()))
+	t.Cleanup(srv.Close)
+
+	res, err := connectHTTP(t, srv, "k1").CallTool(t.Context(), &mcp.CallToolParams{Name: "list_boards", Arguments: map[string]any{}})
+
+	require.NoError(t, err)
+	require.True(t, res.IsError)
+	text := res.Content[0].(*mcp.TextContent).Text
+	assert.Contains(t, text, "Planka did not answer")
+	assert.NotContains(t, text, strings.TrimPrefix(downURL, "http://"))
 }

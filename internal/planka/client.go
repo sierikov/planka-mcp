@@ -7,13 +7,17 @@ package planka
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
+	"net"
 	"net/http"
 	"net/url"
 	"strings"
+	"syscall"
 	"time"
 	"unicode/utf8"
 )
@@ -57,6 +61,49 @@ func WithAPIKey(ctx context.Context, key string) context.Context {
 // uploadTimeout is the shortest time limit of a request that uploads a file.
 const uploadTimeout = 5 * time.Minute
 
+// errRemoteRedirect stands for a redirect in front of remote callers, who
+// must not learn where Planka redirects to; the server's log has it.
+var errRemoteRedirect = errors.New("got a redirect from Planka: the server's PLANKA_URL needs fixing, so ask its admin")
+
+// TransportError is a request that got no answer from Planka, for a client
+// that serves remote callers. Its text says what kind of failure it was but
+// not Planka's address; Unwrap gives the full error, which is logged.
+type TransportError struct {
+	// Kind says what went wrong, such as "the connection was refused".
+	Kind string
+	err  error
+}
+
+// Error implements error.
+func (e *TransportError) Error() string {
+	return "Planka did not answer (" + e.Kind + "); try again later, or tell the server's admin if it goes on"
+}
+
+// Unwrap returns the full error.
+func (e *TransportError) Unwrap() error { return e.err }
+
+// transportKind words what made a request fail, without the address.
+func transportKind(err error) string {
+	var (
+		dns     *net.DNSError
+		netErr  net.Error
+		certErr *tls.CertificateVerificationError
+	)
+	switch {
+	case errors.Is(err, context.Canceled):
+		return "the request was cancelled"
+	case errors.Is(err, context.DeadlineExceeded), errors.As(err, &netErr) && netErr.Timeout():
+		return "it timed out"
+	case errors.As(err, &dns):
+		return "its host name could not be resolved"
+	case errors.Is(err, syscall.ECONNREFUSED):
+		return "the connection was refused"
+	case errors.As(err, &certErr):
+		return "its TLS certificate was not accepted"
+	}
+	return "the connection failed"
+}
+
 // Client is an HTTP client for the Planka API.
 type Client struct {
 	baseURL      string
@@ -64,6 +111,7 @@ type Client struct {
 	session      *session // set by WithLogin
 	httpClient   *http.Client
 	uploadClient *http.Client // httpClient with a time limit of at least uploadTimeout
+	remote       bool         // set by WithRemoteCallers
 }
 
 // Option configures a Client.
@@ -73,6 +121,14 @@ type Option func(*Client)
 // (the stdio transport, where one key serves every call).
 func WithStaticKey(key string) Option {
 	return func(c *Client) { c.staticKey = key }
+}
+
+// WithRemoteCallers marks a client that serves callers on other machines
+// (HTTP mode). They must not learn where Planka runs, so an error that would
+// show its address, a connection failure or a redirect, is logged in full and
+// reaches the caller without it.
+func WithRemoteCallers() Option {
+	return func(c *Client) { c.remote = true }
 }
 
 // WithHTTPClient replaces the default HTTP client (15 second timeout). The
@@ -237,16 +293,21 @@ func (c *Client) send(ctx context.Context, cred credential, method, path string,
 	}
 	resp, err := h.Do(req)
 	if err != nil {
-		return fmt.Errorf("request failed: %w", err)
+		return c.unreachable(fmt.Errorf("request failed: %w", err))
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode >= http.StatusMultipleChoices && resp.StatusCode < http.StatusBadRequest {
-		return redirectError(req, resp)
+		err := redirectError(req, resp)
+		if c.remote {
+			slog.Default().Warn("Planka answered with a redirect", "error", err)
+			return errRemoteRedirect
+		}
+		return err
 	}
 	respBody, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return fmt.Errorf("reading response: %w", err)
+		return c.unreachable(fmt.Errorf("reading response: %w", err))
 	}
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		return &APIError{Status: resp.StatusCode, Body: truncate(string(respBody))}
@@ -258,6 +319,16 @@ func (c *Client) send(ctx context.Context, cred credential, method, path string,
 		return fmt.Errorf("decoding response: %w", err)
 	}
 	return nil
+}
+
+// unreachable is err, a request that got no answer: as it is for a local
+// caller, who configured the address, and as a TransportError for remote ones.
+func (c *Client) unreachable(err error) error {
+	if !c.remote {
+		return err
+	}
+	slog.Default().Warn("Planka request failed", "error", err)
+	return &TransportError{Kind: transportKind(err), err: err}
 }
 
 // redirectError explains a 3xx answer, which the client never follows. When

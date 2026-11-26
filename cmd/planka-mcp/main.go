@@ -89,7 +89,11 @@ func command(args []string, stdout io.Writer) (code int, ok bool) {
 	case "help", "-h", "-help", "--help":
 		_, _ = fmt.Fprint(stdout, usage)
 	case "version", "-version", "--version":
-		_, _ = fmt.Fprintln(stdout, buildVersion())
+		version := buildVersion()
+		_, _ = fmt.Fprintln(stdout, version)
+		if checker, ok := newChecker(version, os.Getenv); ok {
+			reportUpdate(context.Background(), stdout, checker)
+		}
 	default:
 		return 0, false
 	}
@@ -124,7 +128,13 @@ func run(ctx context.Context, cfg Config, stdin io.Reader, stdout io.Writer) err
 	case transportStdio:
 		client := planka.NewClient(cfg.URL, stdioAuth(cfg))
 		defer logout(ctx, client)
-		server := tools.NewServer(newDeps(client, cfg.PublicURL, true), buildVersion())
+		deps := newDeps(client, cfg.PublicURL, true)
+		if checker, ok := newChecker(buildVersion(), os.Getenv); ok {
+			deps.Notice = updateInstructions(checker)
+			// For the next start: the notice above came from the cache.
+			go func() { _ = checker.Refresh(ctx) }()
+		}
+		server := tools.NewServer(deps, buildVersion())
 		// The SDK closes the reader when ctx ends, which is what unblocks a read on an idle
 		// stdin, so a closable reader must keep its Close. Stdout is never closed.
 		reader, ok := stdin.(io.ReadCloser)
@@ -172,7 +182,7 @@ func logout(ctx context.Context, client *planka.Client) {
 // runHTTP serves MCP over HTTP on ln until ctx ends. One client without a static key serves
 // every request: each carries its own key in its context.
 func runHTTP(ctx context.Context, cfg Config, ln net.Listener) error {
-	client := planka.NewClient(cfg.URL)
+	client := planka.NewClient(cfg.URL, planka.WithRemoteCallers())
 	server := tools.NewServer(newDeps(client, cfg.PublicURL, false), buildVersion())
 	logger := slog.Default() // main installs its stderr logger as the default
 	return serveHTTP(ctx, ln, newHTTPHandler(server, logger), logger)

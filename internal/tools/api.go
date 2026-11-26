@@ -24,6 +24,7 @@ type CardService interface {
 	Move(ctx context.Context, in service.MoveCard) (*service.WriteResult, error)
 	Update(ctx context.Context, in service.UpdateCard) (*service.WriteResult, error)
 	Delete(ctx context.Context, ref service.CardRef) (*service.CardSummary, error)
+	EditDescription(ctx context.Context, in service.EditDescription) (*service.EditedDescription, error)
 }
 
 // CommentService adds, changes and deletes comments.
@@ -92,6 +93,9 @@ type Deps struct {
 
 	// PublicURL is the base of the card links in results ("" leaves them out).
 	PublicURL string
+	// Notice is added to the server instructions: the update notice in stdio
+	// mode, or "".
+	Notice string
 	// Uploads offers add_attachment's path: the server runs on the user's own
 	// machine (stdio), so local files are the user's. Without it the tool
 	// attaches links only.

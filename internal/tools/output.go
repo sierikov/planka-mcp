@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/modelcontextprotocol/go-sdk/mcp"
 
@@ -65,14 +66,19 @@ type listOut struct {
 // cardOut is the full card, as get_card returns it.
 type cardOut struct {
 	cardLine
-	URL          string                `json:"url,omitempty"`
-	Project      string                `json:"project,omitempty"`
-	Type         string                `json:"type,omitempty"`
-	Description  string                `json:"description,omitempty"`
-	Stopwatch    string                `json:"stopwatch,omitempty"`
-	TaskLists    []taskListOut         `json:"task_lists,omitempty"`
-	Attachments  []attachmentOut       `json:"attachments,omitempty"`
-	CustomFields []customFieldGroupOut `json:"custom_fields,omitempty"`
+	URL         string `json:"url,omitempty"`
+	Project     string `json:"project,omitempty"`
+	Type        string `json:"type,omitempty"`
+	Description string `json:"description,omitempty"`
+	// Section is the outline ID of the part of the description shown, when
+	// only a part was asked for; Outline replaces the text when asked for.
+	Section            string                `json:"section,omitempty"`
+	DescriptionOutline []outlineOut          `json:"description_outline,omitempty"`
+	DescriptionVersion string                `json:"description_version,omitempty"`
+	Stopwatch          string                `json:"stopwatch,omitempty"`
+	TaskLists          []taskListOut         `json:"task_lists,omitempty"`
+	Attachments        []attachmentOut       `json:"attachments,omitempty"`
+	CustomFields       []customFieldGroupOut `json:"custom_fields,omitempty"`
 	// CommentsTotal is always present in the full card, so 0 says there are
 	// none rather than that they were left out.
 	CommentsTotal int          `json:"comments_total"`
@@ -412,4 +418,39 @@ func toCustomFieldGroups(groups []service.CustomFieldGroup) []customFieldGroupOu
 		out = append(out, group)
 	}
 	return out
+}
+
+// outlineOut is one section of a description: its outline ID, heading,
+// heading level and size in characters.
+type outlineOut struct {
+	ID      string `json:"id"`
+	Heading string `json:"heading,omitempty"`
+	Level   int    `json:"level,omitzero"`
+	Chars   int    `json:"chars"`
+}
+
+// describe shapes out's description as asked: "" or "full" keeps the text,
+// "outline" replaces it with the outline, and an outline ID keeps only that
+// section. The version always names the whole description.
+func describe(out *cardOut, mode string) error {
+	text := out.Description
+	out.DescriptionVersion = service.DescriptionVersion(text)
+	switch mode = strings.TrimSpace(mode); mode {
+	case "", "full":
+	case "outline":
+		out.Description = ""
+		for _, e := range service.Outline(text) {
+			out.DescriptionOutline = append(out.DescriptionOutline, outlineOut{ID: e.ID, Heading: e.Heading, Level: e.Level, Chars: e.Chars})
+		}
+		if len(out.DescriptionOutline) == 0 && text != "" {
+			out.DescriptionOutline = []outlineOut{{ID: "0", Chars: utf8.RuneCountInString(text)}}
+		}
+	default:
+		part, err := service.Section(text, mode)
+		if err != nil {
+			return fmt.Errorf("description: %w; use full, outline or a section id", err)
+		}
+		out.Description, out.Section = part, mode
+	}
+	return nil
 }

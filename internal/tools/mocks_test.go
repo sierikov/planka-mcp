@@ -429,6 +429,74 @@ func (_c *MockCardService_Delete_Call) RunAndReturn(run func(ctx context.Context
 	return _c
 }
 
+// EditDescription provides a mock function for the type MockCardService
+func (_mock *MockCardService) EditDescription(ctx context.Context, in service.EditDescription) (*service.EditedDescription, error) {
+	ret := _mock.Called(ctx, in)
+
+	if len(ret) == 0 {
+		panic("no return value specified for EditDescription")
+	}
+
+	var r0 *service.EditedDescription
+	var r1 error
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.EditDescription) (*service.EditedDescription, error)); ok {
+		return returnFunc(ctx, in)
+	}
+	if returnFunc, ok := ret.Get(0).(func(context.Context, service.EditDescription) *service.EditedDescription); ok {
+		r0 = returnFunc(ctx, in)
+	} else {
+		if ret.Get(0) != nil {
+			r0 = ret.Get(0).(*service.EditedDescription)
+		}
+	}
+	if returnFunc, ok := ret.Get(1).(func(context.Context, service.EditDescription) error); ok {
+		r1 = returnFunc(ctx, in)
+	} else {
+		r1 = ret.Error(1)
+	}
+	return r0, r1
+}
+
+// MockCardService_EditDescription_Call is a *mock.Call that shadows Run/Return methods with type explicit version for method 'EditDescription'
+type MockCardService_EditDescription_Call struct {
+	*mock.Call
+}
+
+// EditDescription is a helper method to define mock.On call
+//   - ctx context.Context
+//   - in service.EditDescription
+func (_e *MockCardService_Expecter) EditDescription(ctx interface{}, in interface{}) *MockCardService_EditDescription_Call {
+	return &MockCardService_EditDescription_Call{Call: _e.mock.On("EditDescription", ctx, in)}
+}
+
+func (_c *MockCardService_EditDescription_Call) Run(run func(ctx context.Context, in service.EditDescription)) *MockCardService_EditDescription_Call {
+	_c.Call.Run(func(args mock.Arguments) {
+		var arg0 context.Context
+		if args[0] != nil {
+			arg0 = args[0].(context.Context)
+		}
+		var arg1 service.EditDescription
+		if args[1] != nil {
+			arg1 = args[1].(service.EditDescription)
+		}
+		run(
+			arg0,
+			arg1,
+		)
+	})
+	return _c
+}
+
+func (_c *MockCardService_EditDescription_Call) Return(editedDescription *service.EditedDescription, err error) *MockCardService_EditDescription_Call {
+	_c.Call.Return(editedDescription, err)
+	return _c
+}
+
+func (_c *MockCardService_EditDescription_Call) RunAndReturn(run func(ctx context.Context, in service.EditDescription) (*service.EditedDescription, error)) *MockCardService_EditDescription_Call {
+	_c.Call.Return(run)
+	return _c
+}
+
 // Get provides a mock function for the type MockCardService
 func (_mock *MockCardService) Get(ctx context.Context, ref service.CardRef, commentsLimit int) (*service.Card, error) {
 	ret := _mock.Called(ctx, ref, commentsLimit)

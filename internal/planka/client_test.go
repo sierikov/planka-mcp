@@ -1,7 +1,10 @@
 package planka
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -207,4 +210,53 @@ func TestRedirectWithoutLocation(t *testing.T) {
 	require.Error(t, err)
 	assert.Contains(t, err.Error(), "redirect")
 	assert.Contains(t, err.Error(), "PLANKA_URL")
+}
+
+// closedAddress is the URL of a local port nothing listens on any more.
+func closedAddress(t *testing.T) string {
+	t.Helper()
+	srv := httptest.NewServer(http.NotFoundHandler())
+	addr := srv.URL
+	srv.Close()
+	return addr
+}
+
+// TestRemoteCallersDoNotLearnPlankasAddress: in HTTP mode a remote caller
+// must not learn where Planka runs from a connection failure or a redirect.
+func TestRemoteCallersDoNotLearnPlankasAddress(t *testing.T) {
+	down := closedAddress(t)
+	target := plankatest.NewServer(t, nil)
+	front := redirector(t, http.StatusMovedPermanently, target.URL)
+	host := strings.TrimPrefix(down, "http://")
+
+	c := NewClient(down, WithStaticKey(plankatest.APIKey), WithRemoteCallers())
+	err := c.do(t.Context(), http.MethodGet, "/api/users/me", nil, nil, nil)
+	require.Error(t, err)
+	assert.Equal(t, "Planka did not answer (the connection was refused); try again later, or tell the server's admin if it goes on", err.Error())
+	assert.NotContains(t, err.Error(), host)
+	var te *TransportError
+	require.ErrorAs(t, err, &te)
+	assert.Contains(t, errors.Unwrap(te).Error(), host, "the full error is kept for the log")
+
+	c = NewClient(front.URL, WithStaticKey(plankatest.APIKey), WithRemoteCallers())
+	err = c.do(t.Context(), http.MethodGet, "/api/users/me", nil, nil, nil)
+	require.Error(t, err)
+	assert.NotContains(t, err.Error(), strings.TrimPrefix(target.URL, "http://"))
+	assert.Contains(t, err.Error(), "the server's PLANKA_URL needs fixing")
+}
+
+func TestLocalCallersKeepTheDetail(t *testing.T) {
+	down := closedAddress(t)
+
+	err := NewClient(down, WithStaticKey(plankatest.APIKey)).do(t.Context(), http.MethodGet, "/api/users/me", nil, nil, nil)
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), strings.TrimPrefix(down, "http://"), "the owner set PLANKA_URL and needs to see it")
+}
+
+func TestTransportKind(t *testing.T) {
+	assert.Equal(t, "the request was cancelled", transportKind(context.Canceled))
+	assert.Equal(t, "it timed out", transportKind(fmt.Errorf("x: %w", context.DeadlineExceeded)))
+	assert.Equal(t, "its host name could not be resolved", transportKind(&net.DNSError{Err: "no such host", Name: "planka.internal"}))
+	assert.Equal(t, "the connection failed", transportKind(errors.New("eof")))
 }

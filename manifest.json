@@ -159,6 +159,10 @@
     {
       "name": "remove_board_member",
       "description": "Take someone's access to a board away"
+    },
+    {
+      "name": "edit_description",
+      "description": "Change part of a card's description and see the diff"
     }
   ],
   "user_config": {

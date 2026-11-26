@@ -3,6 +3,7 @@ package tools
 import (
 	"errors"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -84,4 +85,10 @@ func TestZoneText(t *testing.T) {
 			assert.Equal(t, tc.want, zoneText(tc.now, env(tc.tz), tc.readlink))
 		})
 	}
+}
+
+func TestNoticeIsAddedToTheInstructions(t *testing.T) {
+	session := connect(t, Deps{Notice: "planka-mcp has a newer release: 9.9.9."})
+
+	assert.True(t, strings.HasSuffix(session.InitializeResult().Instructions, "\n\nplanka-mcp has a newer release: 9.9.9."))
 }

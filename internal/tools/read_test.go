@@ -135,6 +135,8 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"add_board_member":    {"board", "person", "role"},
 		"update_board_member": {"board", "person"},
 		"remove_board_member": {"board", "person"},
+
+		"edit_description": {"card", "edits"},
 	}
 	for _, tool := range res.Tools {
 		assert.NotEmpty(t, tool.Description, tool.Name)
@@ -399,7 +401,7 @@ func TestGetCardDefaultsCommentsLimit10(t *testing.T) {
 
 	res := call(t, connect(t, Deps{Cards: cards}), "get_card", map[string]any{"card": "c1"})
 	assert.False(t, res.IsError)
-	assert.JSONEq(t, `{"id":"c1","title":"T","description":"# body","comments_total":0}`, resultText(t, res))
+	assert.JSONEq(t, `{"id":"c1","title":"T","description":"# body","description_version":"`+service.DescriptionVersion("# body")+`","comments_total":0}`, resultText(t, res))
 }
 
 func TestGetCardPassesArguments(t *testing.T) {

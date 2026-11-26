@@ -1,0 +1,77 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to change part of a Planka card's description without resending it: replace or extend a section, or replace exact text. Read get_card description=outline first and pass its description_version. The rest of the text is kept as it is. Returns a unified diff and the new description_version.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board to look on when card is a title (ID, URL or name)",
+        "type": "string"
+      },
+      "card": {
+        "description": "card ID, card URL, or title (or part of it); a match in the description alone is refused",
+        "type": "string"
+      },
+      "edits": {
+        "description": "the changes, each found in the description as it is now; if one fails nothing is written",
+        "items": {
+          "additionalProperties": false,
+          "properties": {
+            "append": {
+              "description": "add lines at the end of the section, or of the whole description without section",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "body": {
+              "description": "replace the section's text under its heading, subsections included",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "find": {
+              "description": "exact text to replace; it must occur exactly once",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "replace": {
+              "description": "the text that replaces find; may be empty or span lines",
+              "type": [
+                "null",
+                "string"
+              ]
+            },
+            "section": {
+              "description": "outline id such as 2.1 (get_card description=outline); with find, the search is limited to it",
+              "type": "string"
+            }
+          },
+          "type": "object"
+        },
+        "type": [
+          "null",
+          "array"
+        ]
+      },
+      "version": {
+        "description": "the description_version get_card gave; the edit is refused if the description changed since",
+        "type": "string"
+      }
+    },
+    "required": [
+      "card",
+      "edits"
+    ],
+    "type": "object"
+  },
+  "name": "edit_description",
+  "title": "Edit description"
+}
