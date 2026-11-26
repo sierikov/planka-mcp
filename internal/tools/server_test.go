@@ -13,6 +13,8 @@ import (
 
 // TestEveryToolHasATitleAndIsClosedWorld: clients show the title, and openWorldHint=false tells
 // them the tools only touch the user's own Planka (the MCP default is true).
+// TestEveryToolHasATitleAndIsClosedWorld: every tool stays inside Planka,
+// except set_project_background, which fetches photos from Unsplash.
 func TestEveryToolHasATitleAndIsClosedWorld(t *testing.T) {
 	session := connect(t, Deps{})
 	res, err := session.ListTools(t.Context(), nil)
@@ -22,7 +24,7 @@ func TestEveryToolHasATitleAndIsClosedWorld(t *testing.T) {
 		assert.NotEmpty(t, tool.Title, tool.Name)
 		require.NotNil(t, tool.Annotations, tool.Name)
 		if assert.NotNil(t, tool.Annotations.OpenWorldHint, tool.Name) {
-			assert.False(t, *tool.Annotations.OpenWorldHint, tool.Name)
+			assert.Equal(t, tool.Name == "set_project_background", *tool.Annotations.OpenWorldHint, tool.Name)
 		}
 	}
 }

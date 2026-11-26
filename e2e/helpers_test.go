@@ -272,16 +272,24 @@ func waitForPlanka(ctx context.Context, base string, wait time.Duration) bool {
 // POST /api/users/:id/api-key; the user's own token gets a 404), so the admin does it and no login is needed.
 func (p *planka) newUser(t *testing.T, suffix string) (id, key string) {
 	t.Helper()
-	username := "e2e" + suffix
-	id = p.send(t, http.MethodPost, "/users", map[string]any{
-		"email": username + "@example.com", "password": randomPassword(t), "role": "boardUser",
-		"name": "E2E " + suffix, "username": username,
-	}).Item.ID
-	t.Cleanup(func() { p.deleteUser(t, id) })
+	id = p.newRoleUser(t, suffix, "boardUser")
 
 	out := p.send(t, http.MethodPost, "/users/"+id+"/api-key", nil)
 	require.NotEmpty(t, out.Included.APIKey)
 	return id, out.Included.APIKey
+}
+
+// newRoleUser creates a user with a Planka role (boardUser, projectOwner or
+// admin), username "e2e"+suffix, without an API key, and returns their ID.
+func (p *planka) newRoleUser(t *testing.T, suffix, role string) string {
+	t.Helper()
+	username := "e2e" + suffix
+	id := p.send(t, http.MethodPost, "/users", map[string]any{
+		"email": username + "@example.com", "password": randomPassword(t), "role": role,
+		"name": "E2E " + suffix, "username": username,
+	}).Item.ID
+	t.Cleanup(func() { p.deleteUser(t, id) })
+	return id
 }
 
 // newLoginUser creates a board user without an API key and returns their ID, username and

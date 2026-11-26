@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to let someone manage a shared Planka project: create, change and delete its boards and add people to them. A private project takes no other managers. Only a manager of the project or a Planka admin can, and the person must be a Planka admin or project owner. Returns the person and the project's managers.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "person": {
+        "description": "username, full name or email of a Planka user, or me",
+        "type": "string"
+      },
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project",
+      "person"
+    ],
+    "type": "object"
+  },
+  "name": "add_project_manager",
+  "title": "Add project manager"
+}

@@ -11,6 +11,17 @@ import (
 	"github.com/sierikov/planka-mcp/internal/service"
 )
 
+func TestCreateLabelOutput(t *testing.T) {
+	labels := NewMockLabelService(t)
+	labels.EXPECT().Create(mock.Anything, service.CreateLabel{Board: "B", Name: "release"}).
+		Return(&service.LabelResult{ID: "l2", Name: "release", Color: "lagoon-blue"}, nil)
+
+	res := call(t, connect(t, Deps{Labels: labels}), "create_label", map[string]any{"board": "B", "name": "release"})
+
+	assert.False(t, res.IsError, resultText(t, res))
+	assert.JSONEq(t, `{"id":"l2","name":"release","color":"lagoon-blue"}`, resultText(t, res))
+}
+
 func TestUpdateLabelOutput(t *testing.T) {
 	labels := NewMockLabelService(t)
 	labels.EXPECT().Update(mock.Anything, service.UpdateLabel{Board: "B", Label: "bug", Color: new("berry-red")}).

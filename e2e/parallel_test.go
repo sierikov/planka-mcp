@@ -39,11 +39,13 @@ func TestParallelWritesOnOneBoard(t *testing.T) {
 	wg.Wait()
 
 	board := callInto[struct {
-		Labels []string `json:"labels"`
+		Labels []struct {
+			Name string `json:"name"`
+		} `json:"labels"`
 	}](t, s, "get_board", map[string]any{"board": b.ID})
 	release := 0
 	for _, l := range board.Labels {
-		if l == "release" {
+		if l.Name == "release" {
 			release++
 		}
 	}

@@ -8,6 +8,12 @@ import (
 	"github.com/sierikov/planka-mcp/internal/service"
 )
 
+type createLabelInput struct {
+	Board string  `json:"board" jsonschema:"board ID, URL or name"`
+	Name  string  `json:"name" jsonschema:"the new label's name; it must differ from the board's other labels"`
+	Color *string `json:"color,omitempty" jsonschema:"one of Planka's label colours (default: one picked from the name)"`
+}
+
 type updateLabelInput struct {
 	Board string  `json:"board" jsonschema:"board ID, URL or name"`
 	Label string  `json:"label" jsonschema:"the label to change, by exact name or ID"`
@@ -30,6 +36,13 @@ type labelOut struct {
 	CardsTotal int    `json:"cards_total"`
 }
 
+// newLabelOut is a label create_label made.
+type newLabelOut struct {
+	ID    string `json:"id"`
+	Name  string `json:"name"`
+	Color string `json:"color"`
+}
+
 // deletedLabelOut confirms a deleted label and lists the cards it was taken
 // off, so it can be put back; More counts the cards left out.
 type deletedLabelOut struct {
@@ -41,9 +54,19 @@ type deletedLabelOut struct {
 	Hint    string     `json:"hint,omitempty"`
 }
 
-// registerLabelTools adds the tools that change and delete a board's labels.
-// Labels are created by create_card and update_card with create_labels.
+// registerLabelTools adds the tools that create, change and delete a board's
+// labels. create_card and update_card also create labels, with create_labels.
 func registerLabelTools(server *mcp.Server, labels LabelService) {
+	addTool(server, &mcp.Tool{
+		Name:  "create_label",
+		Title: "Create label",
+		Description: "Use this to add a label to a Planka board without putting it on a card. " +
+			"To create a label while labelling a card, use create_card or update_card with create_labels instead. " +
+			"Returns the label (id, name, color).",
+		Annotations: additive,
+		InputSchema: inputSchema[createLabelInput](map[string][]string{"color": service.LabelColors}),
+	}, createLabel(labels))
+
 	addTool(server, &mcp.Tool{
 		Name:  "update_label",
 		Title: "Update label",
@@ -61,6 +84,16 @@ func registerLabelTools(server *mcp.Server, labels LabelService) {
 			"Returns the deleted label and the cards it was taken off.",
 		Annotations: destructive,
 	}, deleteLabel(labels))
+}
+
+func createLabel(labels LabelService) func(context.Context, *mcp.CallToolRequest, createLabelInput) (*mcp.CallToolResult, any, error) {
+	return func(ctx context.Context, _ *mcp.CallToolRequest, in createLabelInput) (*mcp.CallToolResult, any, error) {
+		res, err := labels.Create(ctx, service.CreateLabel{Board: in.Board, Name: in.Name, Color: in.Color})
+		if err != nil {
+			return errorResult(err)
+		}
+		return jsonResult(newLabelOut{ID: res.ID, Name: res.Name, Color: res.Color})
+	}
 }
 
 func updateLabel(labels LabelService) func(context.Context, *mcp.CallToolRequest, updateLabelInput) (*mcp.CallToolResult, any, error) {

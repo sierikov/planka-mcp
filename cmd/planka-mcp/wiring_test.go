@@ -13,6 +13,7 @@ import (
 	"github.com/sierikov/planka-mcp/internal/planka"
 	"github.com/sierikov/planka-mcp/internal/planka/plankatest"
 	"github.com/sierikov/planka-mcp/internal/tools"
+	"github.com/sierikov/planka-mcp/internal/unsplash"
 )
 
 // Fixture IDs: projects.json lists the board that board.json describes, and card.json is
@@ -45,7 +46,7 @@ func newRecordedServer(t *testing.T, extra map[string]any) (server *mcp.Server, 
 	}
 	srv := plankatest.NewServer(t, routes)
 	client := planka.NewClient(srv.URL, planka.WithStaticKey(plankatest.APIKey))
-	return tools.NewServer(newDeps(client, "", true), "test"), srv
+	return tools.NewServer(newDeps(client, "", true, unsplash.New("")), "test"), srv
 }
 
 func callText(t *testing.T, session *mcp.ClientSession, name string, args map[string]any) string {

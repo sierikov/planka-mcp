@@ -44,11 +44,11 @@ func requirePlanka(t *testing.T) *planka {
 	return &planka{base: env.url, key: env.key}
 }
 
-// serverEnv is the environment of a planka-mcp process: the parent's, minus every PLANKA_ variable
+// serverEnv is the environment of a planka-mcp process: the parent's, minus every PLANKA_ and UNSPLASH_ variable
 // and TZ, which is serverZone.
 func serverEnv(extra ...string) []string {
 	out := slices.DeleteFunc(os.Environ(), func(kv string) bool {
-		return strings.HasPrefix(kv, "PLANKA_") || strings.HasPrefix(kv, "TZ=")
+		return strings.HasPrefix(kv, "PLANKA_") || strings.HasPrefix(kv, "UNSPLASH_") || strings.HasPrefix(kv, "TZ=")
 	})
 	return append(append(out, "TZ="+serverZone), extra...)
 }
@@ -65,8 +65,14 @@ func connect(t *testing.T, transport mcp.Transport) *mcp.ClientSession {
 // connectStdio starts the binary under test over stdio, signed in with key.
 func connectStdio(t *testing.T, key string) *mcp.ClientSession {
 	t.Helper()
+	return connectStdioEnv(t, key)
+}
+
+// connectStdioEnv is connectStdio with extra environment variables, such as UNSPLASH_ACCESS_KEY.
+func connectStdioEnv(t *testing.T, key string, extra ...string) *mcp.ClientSession {
+	t.Helper()
 	cmd := exec.CommandContext(t.Context(), env.binary) //nolint:gosec // the binary is the one TestMain just built
-	cmd.Env = serverEnv("PLANKA_URL="+env.url, "PLANKA_API_KEY="+key)
+	cmd.Env = serverEnv(append([]string{"PLANKA_URL=" + env.url, "PLANKA_API_KEY=" + key}, extra...)...)
 	cmd.Stderr = os.Stderr
 	return connect(t, &mcp.CommandTransport{Command: cmd})
 }

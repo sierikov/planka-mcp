@@ -23,7 +23,8 @@
         "PLANKA_URL": "${user_config.planka_url}",
         "PLANKA_API_KEY": "${user_config.planka_api_key}",
         "PLANKA_USERNAME": "${user_config.planka_username}",
-        "PLANKA_PASSWORD": "${user_config.planka_password}"
+        "PLANKA_PASSWORD": "${user_config.planka_password}",
+        "UNSPLASH_ACCESS_KEY": "${user_config.unsplash_access_key}"
       }
     }
   },
@@ -129,6 +130,10 @@
       "description": "Set or clear a card's custom field values"
     },
     {
+      "name": "create_label",
+      "description": "Add a label to a board"
+    },
+    {
       "name": "update_label",
       "description": "Rename or recolour a board label"
     },
@@ -159,6 +164,30 @@
     {
       "name": "remove_board_member",
       "description": "Take someone's access to a board away"
+    },
+    {
+      "name": "create_project",
+      "description": "Create a project, private or shared"
+    },
+    {
+      "name": "update_project",
+      "description": "Rename a project or change its description"
+    },
+    {
+      "name": "delete_project",
+      "description": "Delete a project that has no boards left"
+    },
+    {
+      "name": "add_project_manager",
+      "description": "Let someone manage a shared project"
+    },
+    {
+      "name": "remove_project_manager",
+      "description": "Take away someone's right to manage a project"
+    },
+    {
+      "name": "set_project_background",
+      "description": "Set a project background: a gradient or an Unsplash photo"
     },
     {
       "name": "edit_description",
@@ -193,6 +222,14 @@
       "type": "string",
       "title": "Password",
       "description": "Your Planka password, used with the username above. Not for accounts that use single sign-on or two-factor authentication: those need an API key.",
+      "required": false,
+      "sensitive": true,
+      "default": ""
+    },
+    "unsplash_access_key": {
+      "type": "string",
+      "title": "Unsplash access key",
+      "description": "Optional. An Unsplash access key (unsplash.com/developers) lets set_project_background find a photo by words and take unsplash.com photo page links. Image links (images.unsplash.com) and gradients work without it.",
       "required": false,
       "sensitive": true,
       "default": ""

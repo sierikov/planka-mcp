@@ -46,7 +46,7 @@ func (c *Catalog) ListBoards(ctx context.Context, query string) ([]ProjectBoards
 			}
 		}
 		if len(kept) > 0 {
-			out = append(out, ProjectBoards{Project: g.Project, Boards: kept})
+			out = append(out, ProjectBoards{ProjectID: g.ProjectID, Project: g.Project, Boards: kept})
 		}
 	}
 	return out, nil
@@ -158,7 +158,7 @@ func groupBoards(resp *planka.ProjectsResponse) []ProjectBoards {
 		for i, b := range boards {
 			refs[i] = BoardRef{ID: b.ID, Name: b.Name, Project: p.Name}
 		}
-		out = append(out, ProjectBoards{Project: p.Name, Boards: refs})
+		out = append(out, ProjectBoards{ProjectID: p.ID, Project: p.Name, Boards: refs})
 	}
 	return out
 }

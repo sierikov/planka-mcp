@@ -18,8 +18,22 @@ type User struct {
 
 // Project groups boards.
 type Project struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID          string  `json:"id"`
+	Name        string  `json:"name"`
+	Description *string `json:"description"`
+	// OwnerProjectManagerID is set on a private project: its one manager.
+	OwnerProjectManagerID *string `json:"ownerProjectManagerId"`
+	// BackgroundType is gradient, image, or nil for none.
+	BackgroundType     *string `json:"backgroundType"`
+	BackgroundGradient *string `json:"backgroundGradient"`
+	BackgroundImageID  *string `json:"backgroundImageId"`
+}
+
+// ProjectManager makes a user a manager of a project.
+type ProjectManager struct {
+	ID        string `json:"id"`
+	ProjectID string `json:"projectId"`
+	UserID    string `json:"userId"`
 }
 
 // Board is a kanban board.
@@ -228,6 +242,8 @@ type ProjectsResponse struct {
 // are the fields of the base groups.
 type ProjectsIncluded struct {
 	Boards                []Board                `json:"boards"`
+	ProjectManagers       []ProjectManager       `json:"projectManagers"`
+	Users                 []User                 `json:"users"`
 	BaseCustomFieldGroups []BaseCustomFieldGroup `json:"baseCustomFieldGroups"`
 	CustomFields          []CustomField          `json:"customFields"`
 }

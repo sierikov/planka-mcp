@@ -213,7 +213,7 @@ func TestSnapshotColourOnlyLabel(t *testing.T) {
 	l, err := snap.labelByName("berry-red")
 	require.NoError(t, err)
 	assert.Equal(t, "l3", l.ID)
-	assert.Equal(t, []string{"feature", "research", "berry-red"}, snap.board().Labels)
+	assert.Equal(t, []BoardLabel{{"feature", "muddy-grey"}, {"research", "muddy-grey"}, {"", "berry-red"}}, snap.board().Labels)
 }
 
 func TestSnapshotUserByName(t *testing.T) {
@@ -255,7 +255,7 @@ func TestSnapshotBoardMembers(t *testing.T) {
 	snap := fixtureSnapshot(t)
 	b := snap.board()
 	assert.Equal(t, []string{"Admin"}, b.Members)
-	assert.Equal(t, []string{"feature", "research"}, b.Labels)
+	assert.Equal(t, []BoardLabel{{"feature", "muddy-grey"}, {"research", "muddy-grey"}}, b.Labels)
 	assert.Equal(t, "Projects", b.Project)
 }
 

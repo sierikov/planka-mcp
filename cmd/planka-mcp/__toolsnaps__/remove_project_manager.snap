@@ -1,0 +1,29 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to take away someone's right to manage a shared Planka project. The last manager cannot be removed. Only a manager of the project or a Planka admin can. Returns who was removed and the project's managers.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "person": {
+        "description": "username, full name or email of a Planka user, or me",
+        "type": "string"
+      },
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project",
+      "person"
+    ],
+    "type": "object"
+  },
+  "name": "remove_project_manager",
+  "title": "Remove project manager"
+}

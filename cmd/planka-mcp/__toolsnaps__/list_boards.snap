@@ -4,7 +4,7 @@
     "openWorldHint": false,
     "readOnlyHint": true
   },
-  "description": "Use this to find which Planka boards exist, or to look a board up by name. Returns every project you can see with its boards as {id, name}, optionally filtered by name.",
+  "description": "Use this to find which Planka boards exist, or to look a board up by name. Returns every project you can see (project, project_id) with its boards as {id, name}, optionally filtered by name.",
   "inputSchema": {
     "additionalProperties": false,
     "properties": {

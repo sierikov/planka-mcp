@@ -295,7 +295,7 @@ func (s *boardSnapshot) boardOf(lists []planka.List) *Board {
 		b.Lists[i] = List{ID: l.ID, Name: listLabel(l), Color: deref(l.Color), Closed: l.Type == "closed", Cards: s.cardsIn(l.ID)}
 	}
 	for _, l := range s.sortedLabels() {
-		b.Labels = append(b.Labels, labelName(l))
+		b.Labels = append(b.Labels, BoardLabel{Name: deref(l.Name), Color: l.Color})
 	}
 	for _, m := range s.resp.Included.BoardMemberships {
 		if u, ok := s.users[m.UserID]; ok {

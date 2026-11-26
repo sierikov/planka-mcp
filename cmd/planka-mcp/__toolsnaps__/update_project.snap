@@ -1,0 +1,37 @@
+{
+  "annotations": {
+    "idempotentHint": true,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to rename a Planka project or change its description. Only a project manager can. Returns the project.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "description": {
+        "description": "new description; an empty one clears it",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "name": {
+        "description": "new name; it must differ from your other projects",
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project"
+    ],
+    "type": "object"
+  },
+  "name": "update_project",
+  "title": "Update project"
+}

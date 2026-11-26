@@ -7,8 +7,8 @@ import "time"
 
 // ProjectBoards is one project with the boards the user can see in it.
 type ProjectBoards struct {
-	Project string
-	Boards  []BoardRef
+	ProjectID, Project string
+	Boards             []BoardRef
 }
 
 // BoardRef identifies a board and the project it belongs to.
@@ -20,8 +20,14 @@ type BoardRef struct {
 type Board struct {
 	ID, Name, Project string
 	Lists             []List
-	Labels            []string
+	Labels            []BoardLabel
 	Members           []string
+}
+
+// BoardLabel is one of a board's labels. A label may have no name, and then
+// goes by its colour.
+type BoardLabel struct {
+	Name, Color string
 }
 
 // List is a kanban column. Closed lists hold cards that are finished or dropped.

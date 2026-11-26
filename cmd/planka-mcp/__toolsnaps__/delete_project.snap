@@ -1,0 +1,24 @@
+{
+  "annotations": {
+    "destructiveHint": true,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this only when a Planka project must go. A project that still has boards is refused: delete them first with delete_board. Only a project manager can. Returns the deleted project's id and name.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project"
+    ],
+    "type": "object"
+  },
+  "name": "delete_project",
+  "title": "Delete project"
+}

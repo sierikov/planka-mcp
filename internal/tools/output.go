@@ -35,8 +35,9 @@ type cardLine struct {
 }
 
 type projectOut struct {
-	Project string        `json:"project"`
-	Boards  []boardRefOut `json:"boards"`
+	Project   string        `json:"project"`
+	ProjectID string        `json:"project_id,omitempty"`
+	Boards    []boardRefOut `json:"boards"`
 }
 
 type boardRefOut struct {
@@ -45,13 +46,19 @@ type boardRefOut struct {
 }
 
 type boardOut struct {
-	ID      string    `json:"id"`
-	Name    string    `json:"name"`
-	Project string    `json:"project,omitempty"`
-	Labels  []string  `json:"labels,omitempty"`
-	Members []string  `json:"members,omitempty"`
-	Lists   []listOut `json:"lists,omitempty"`
-	Hint    string    `json:"hint,omitempty"`
+	ID      string          `json:"id"`
+	Name    string          `json:"name"`
+	Project string          `json:"project,omitempty"`
+	Labels  []boardLabelOut `json:"labels,omitempty"`
+	Members []string        `json:"members,omitempty"`
+	Lists   []listOut       `json:"lists,omitempty"`
+	Hint    string          `json:"hint,omitempty"`
+}
+
+// boardLabelOut is one of a board's labels; an unnamed label has only a colour.
+type boardLabelOut struct {
+	Name  string `json:"name,omitempty"`
+	Color string `json:"color"`
 }
 
 // listOut is a list with its first cards. More counts the cards left out.
@@ -205,7 +212,7 @@ func toProjects(projects []service.ProjectBoards) []projectOut {
 		for j, b := range p.Boards {
 			boards[j] = boardRefOut{ID: b.ID, Name: b.Name}
 		}
-		out[i] = projectOut{Project: p.Project, Boards: boards}
+		out[i] = projectOut{Project: p.Project, ProjectID: p.ProjectID, Boards: boards}
 	}
 	return out
 }
@@ -223,7 +230,11 @@ func toBoardOut(b *service.Board, perList func(service.List) int) boardOut {
 		}
 		lists[i] = listOut{Name: l.Name, Color: l.Color, Closed: l.Closed, Cards: cards, More: len(l.Cards) - n}
 	}
-	return boardOut{ID: b.ID, Name: b.Name, Project: b.Project, Labels: b.Labels, Members: b.Members, Lists: lists}
+	labels := make([]boardLabelOut, len(b.Labels))
+	for i, l := range b.Labels {
+		labels[i] = boardLabelOut{Name: l.Name, Color: l.Color}
+	}
+	return boardOut{ID: b.ID, Name: b.Name, Project: b.Project, Labels: labels, Members: b.Members, Lists: lists}
 }
 
 func toCardOut(c *service.Card) cardOut {

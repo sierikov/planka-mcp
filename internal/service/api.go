@@ -4,6 +4,7 @@ import (
 	"context"
 
 	"github.com/sierikov/planka-mcp/internal/planka"
+	"github.com/sierikov/planka-mcp/internal/unsplash"
 )
 
 // The interfaces below are the slices of *planka.Client the services use.
@@ -88,8 +89,9 @@ type AttachmentsAPI interface {
 	DeleteAttachment(ctx context.Context, id string) error
 }
 
-// BoardLabelsAPI changes and deletes board labels.
+// BoardLabelsAPI creates, changes and deletes board labels.
 type BoardLabelsAPI interface {
+	CreateLabel(ctx context.Context, boardID, name, color string, position float64) (*planka.Label, error)
 	UpdateLabel(ctx context.Context, id string, r planka.UpdateLabelRequest) (*planka.Label, error)
 	DeleteLabel(ctx context.Context, id string) error
 }
@@ -98,6 +100,26 @@ type BoardLabelsAPI interface {
 type CustomFieldsAPI interface {
 	SetCustomFieldValue(ctx context.Context, cardID, groupID, fieldID, content string) (*planka.CustomFieldValue, error)
 	ClearCustomFieldValue(ctx context.Context, cardID, groupID, fieldID string) error
+}
+
+// ProjectWriteAPI creates, changes and deletes projects, manages their
+// managers, and lists users.
+type ProjectWriteAPI interface {
+	CreateProject(ctx context.Context, r planka.CreateProjectRequest) (*planka.Project, error)
+	UpdateProject(ctx context.Context, id string, r planka.UpdateProjectRequest) (*planka.Project, error)
+	DeleteProject(ctx context.Context, id string) error
+	CreateProjectManager(ctx context.Context, projectID, userID string) (*planka.ProjectManager, error)
+	DeleteProjectManager(ctx context.Context, id string) error
+	CreateBackgroundImage(ctx context.Context, projectID string, f planka.FileUpload) (*planka.BackgroundImage, error)
+	Users(ctx context.Context) ([]planka.User, error)
+}
+
+// PhotosAPI fetches photos from Unsplash for project backgrounds. Search, and
+// Link to a photo page, work only when CanSearch says so.
+type PhotosAPI interface {
+	Link(ctx context.Context, link string) (*unsplash.Photo, error)
+	Search(ctx context.Context, words string) (*unsplash.Photo, error)
+	CanSearch() bool
 }
 
 // BoardWriteAPI creates, renames and deletes boards, manages their members,

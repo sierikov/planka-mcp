@@ -126,6 +126,7 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"delete_attachment": {"card", "attachment"},
 
 		"set_custom_fields": {"card", "fields"},
+		"create_label":      {"board", "name"},
 		"update_label":      {"board", "label"},
 		"delete_label":      {"board", "label"},
 
@@ -135,6 +136,13 @@ func TestToolDescriptionsAndSchemas(t *testing.T) {
 		"add_board_member":    {"board", "person", "role"},
 		"update_board_member": {"board", "person"},
 		"remove_board_member": {"board", "person"},
+
+		"create_project":         {"name"},
+		"update_project":         {"project"},
+		"delete_project":         {"project"},
+		"add_project_manager":    {"project", "person"},
+		"remove_project_manager": {"project", "person"},
+		"set_project_background": {"project"},
 
 		"edit_description": {"card", "edits"},
 	}
@@ -175,18 +183,18 @@ func TestServerInstructions(t *testing.T) {
 func TestListBoardsPassesQuery(t *testing.T) {
 	catalog := NewMockCatalogService(t)
 	catalog.EXPECT().ListBoards(mock.Anything, "plan").Return([]service.ProjectBoards{
-		{Project: "P", Boards: []service.BoardRef{{ID: "b1", Name: "Planka MCP", Project: "P"}}},
+		{ProjectID: "p1", Project: "P", Boards: []service.BoardRef{{ID: "b1", Name: "Planka MCP", Project: "P"}}},
 	}, nil)
 
 	res := call(t, connect(t, Deps{Catalog: catalog}), "list_boards", map[string]any{"query": "plan"})
 	assert.False(t, res.IsError)
-	assert.JSONEq(t, `[{"project":"P","boards":[{"id":"b1","name":"Planka MCP"}]}]`, resultText(t, res))
+	assert.JSONEq(t, `[{"project":"P","project_id":"p1","boards":[{"id":"b1","name":"Planka MCP"}]}]`, resultText(t, res))
 }
 
 func TestGetBoardOutput(t *testing.T) {
 	catalog := NewMockCatalogService(t)
 	catalog.EXPECT().GetBoard(mock.Anything, "Planka MCP", "Open").Return(&service.Board{
-		ID: "b1", Name: "Planka MCP", Project: "P", Labels: []string{"bug"}, Members: []string{"Ann"},
+		ID: "b1", Name: "Planka MCP", Project: "P", Labels: []service.BoardLabel{{Name: "bug", Color: "berry-red"}, {Color: "lagoon-blue"}}, Members: []string{"Ann"},
 		Lists: []service.List{
 			// The service fills Board and List on every summary; the enclosing board and list already say them.
 			{ID: "l1", Name: "Open", Cards: []service.CardSummary{{ID: "c1", Title: "A", Board: "Planka MCP", List: "Open", TasksDone: 1, TasksTotal: 2}}},
@@ -196,7 +204,7 @@ func TestGetBoardOutput(t *testing.T) {
 
 	res := call(t, connect(t, Deps{Catalog: catalog}), "get_board", map[string]any{"board": "Planka MCP", "list": "Open"})
 	assert.False(t, res.IsError)
-	assert.JSONEq(t, `{"id":"b1","name":"Planka MCP","project":"P","labels":["bug"],"members":["Ann"],`+
+	assert.JSONEq(t, `{"id":"b1","name":"Planka MCP","project":"P","labels":[{"name":"bug","color":"berry-red"},{"color":"lagoon-blue"}],"members":["Ann"],`+
 		`"lists":[{"name":"Open","cards":[{"id":"c1","title":"A","tasks":"1/2"}]},{"name":"Done","closed":true}]}`, resultText(t, res))
 	assert.NotContains(t, resultText(t, res), `"board":`, "card lines do not repeat the board")
 	assert.NotContains(t, resultText(t, res), `"list":`, "card lines do not repeat the list")

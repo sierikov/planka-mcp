@@ -42,8 +42,8 @@ func labelColorFor(name string) string {
 	return colors[h.Sum32()%uint32(len(colors))] //nolint:gosec // len(colors) is 41, far below uint32's range
 }
 
-// Labels changes and deletes the labels of a board. Card writes create labels
-// (create_labels); reading them is (*Catalog).GetBoard.
+// Labels creates, changes and deletes the labels of a board. Card writes also
+// create labels (create_labels); reading them is (*Catalog).GetBoard.
 type Labels struct {
 	cards *Cards
 	api   BoardLabelsAPI
@@ -53,6 +53,13 @@ type Labels struct {
 // locks through cards, and writes through api.
 func NewLabels(cards *Cards, api BoardLabelsAPI) *Labels {
 	return &Labels{cards: cards, api: api}
+}
+
+// CreateLabel describes a new label on Board. A nil Color picks one from the
+// name, as create_labels does.
+type CreateLabel struct {
+	Board, Name string
+	Color       *string
 }
 
 // UpdateLabel changes the label Label (exact name or ID) on Board. A nil
@@ -77,6 +84,39 @@ type DeletedLabel struct {
 	Cards           []CardSummary
 	More            int
 	Partial         bool
+}
+
+// Create adds a label after the board's other labels. Its name must differ
+// from theirs, case ignored.
+func (s *Labels) Create(ctx context.Context, in CreateLabel) (*LabelResult, error) {
+	name, err := checkLabelName(in.Name)
+	if err != nil {
+		return nil, err
+	}
+	color := labelColorFor(name)
+	if in.Color != nil {
+		if err := checkLabelColor(*in.Color); err != nil {
+			return nil, err
+		}
+		color = *in.Color
+	}
+	snap, unlock, err := s.cards.lockBoardRef(ctx, in.Board)
+	if err != nil {
+		return nil, err
+	}
+	defer unlock()
+	if err := uniqueLabelName(snap, name, ""); err != nil {
+		return nil, err
+	}
+	positions := make([]float64, len(snap.resp.Included.Labels))
+	for i, l := range snap.resp.Included.Labels {
+		positions[i] = l.Position
+	}
+	created, err := s.api.CreateLabel(ctx, snap.resp.Item.ID, name, color, bottomPosition(positions))
+	if err != nil {
+		return nil, err
+	}
+	return &LabelResult{ID: created.ID, Name: labelName(*created), Color: created.Color}, nil
 }
 
 // Update renames or recolours a label. A new name must differ from the
@@ -197,22 +237,39 @@ func checkLabelUpdate(in UpdateLabel) (planka.UpdateLabelRequest, error) {
 		return patch, errors.New("nothing to change: give name or color")
 	}
 	if in.Name != nil {
-		name := strings.TrimSpace(*in.Name)
-		switch {
-		case name == "":
-			return patch, errors.New("label name is empty")
-		case jsLen(name) > maxLabelName:
-			return patch, fmt.Errorf("label name is longer than %d characters", maxLabelName)
+		name, err := checkLabelName(*in.Name)
+		if err != nil {
+			return patch, err
 		}
 		patch.Name = planka.Some(name)
 	}
 	if in.Color != nil {
-		if !slices.Contains(LabelColors, *in.Color) {
-			return patch, fmt.Errorf("unknown label color %q; colors: %s", *in.Color, strings.Join(LabelColors, ", "))
+		if err := checkLabelColor(*in.Color); err != nil {
+			return patch, err
 		}
 		patch.Color = planka.Some(*in.Color)
 	}
 	return patch, nil
+}
+
+// checkLabelName trims a label name and checks it is not empty or too long.
+func checkLabelName(name string) (string, error) {
+	name = strings.TrimSpace(name)
+	switch {
+	case name == "":
+		return "", errors.New("label name is empty")
+	case jsLen(name) > maxLabelName:
+		return "", fmt.Errorf("label name is longer than %d characters", maxLabelName)
+	}
+	return name, nil
+}
+
+// checkLabelColor checks a colour is one of LabelColors.
+func checkLabelColor(color string) error {
+	if !slices.Contains(LabelColors, color) {
+		return fmt.Errorf("unknown label color %q; colors: %s", color, strings.Join(LabelColors, ", "))
+	}
+	return nil
 }
 
 // targetLabel finds the label a label write targets with exactLabel: by ID,

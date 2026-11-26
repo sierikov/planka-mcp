@@ -1,0 +1,36 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add a Planka project, which holds boards; then add boards with create_board. Only a Planka admin or project owner can, and becomes its manager. Returns the project (id, name, type, description).",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "description": {
+        "description": "what the project is for",
+        "type": "string"
+      },
+      "name": {
+        "description": "the new project's name; it must differ from your other projects",
+        "type": "string"
+      },
+      "type": {
+        "description": "private (default): you are its only manager; shared: it can have more managers",
+        "enum": [
+          "private",
+          "shared"
+        ],
+        "type": "string"
+      }
+    },
+    "required": [
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "create_project",
+  "title": "Create project"
+}

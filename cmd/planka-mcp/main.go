@@ -20,6 +20,7 @@ import (
 	"github.com/sierikov/planka-mcp/internal/planka"
 	"github.com/sierikov/planka-mcp/internal/service"
 	"github.com/sierikov/planka-mcp/internal/tools"
+	"github.com/sierikov/planka-mcp/internal/unsplash"
 )
 
 // usage is what `planka-mcp help` and -h print.
@@ -37,6 +38,8 @@ Flags (each overrides its environment variable):
 
 PLANKA_PUBLIC_URL is the address people open Planka at, for card links in
 results, when it differs from PLANKA_URL (default: PLANKA_URL).
+UNSPLASH_ACCESS_KEY lets set_project_background find Unsplash photos by words
+and take unsplash.com photo page links; image links work without it.
 
 Credentials, stdio mode only:
   PLANKA_API_KEY                     your Planka API key
@@ -103,7 +106,8 @@ func command(args []string, stdout io.Writer) (code int, ok bool) {
 // newDeps wires the services on a Planka client. publicURL is the base of the
 // card links in tool results. uploads lets add_attachment read local files,
 // which only stdio mode does: there the server runs on the user's machine.
-func newDeps(c *planka.Client, publicURL string, uploads bool) tools.Deps {
+// photos fetches project backgrounds from Unsplash.
+func newDeps(c *planka.Client, publicURL string, uploads bool, photos *unsplash.Client) tools.Deps {
 	catalog := service.NewCatalog(c, c)
 	cards := service.NewCards(catalog, c, c, c, c, c, c, c)
 	return tools.Deps{
@@ -116,9 +120,11 @@ func newDeps(c *planka.Client, publicURL string, uploads bool) tools.Deps {
 		Labels:       service.NewLabels(cards, c),
 		CustomFields: service.NewCustomFields(cards, c),
 		Boards:       service.NewBoards(cards, c, c),
+		Projects:     service.NewProjects(cards, c, photos),
 
-		PublicURL: publicURL,
-		Uploads:   uploads,
+		PublicURL:   publicURL,
+		Uploads:     uploads,
+		PhotoSearch: photos.CanSearch(),
 	}
 }
 
@@ -128,7 +134,7 @@ func run(ctx context.Context, cfg Config, stdin io.Reader, stdout io.Writer) err
 	case transportStdio:
 		client := planka.NewClient(cfg.URL, stdioAuth(cfg))
 		defer logout(ctx, client)
-		deps := newDeps(client, cfg.PublicURL, true)
+		deps := newDeps(client, cfg.PublicURL, true, unsplash.New(cfg.UnsplashKey))
 		if checker, ok := newChecker(buildVersion(), os.Getenv); ok {
 			deps.Notice = updateInstructions(checker)
 			// For the next start: the notice above came from the cache.
@@ -183,7 +189,7 @@ func logout(ctx context.Context, client *planka.Client) {
 // every request: each carries its own key in its context.
 func runHTTP(ctx context.Context, cfg Config, ln net.Listener) error {
 	client := planka.NewClient(cfg.URL, planka.WithRemoteCallers())
-	server := tools.NewServer(newDeps(client, cfg.PublicURL, false), buildVersion())
+	server := tools.NewServer(newDeps(client, cfg.PublicURL, false, unsplash.New(cfg.UnsplashKey)), buildVersion())
 	logger := slog.Default() // main installs its stderr logger as the default
 	return serveHTTP(ctx, ln, newHTTPHandler(server, logger), logger)
 }

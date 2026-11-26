@@ -61,9 +61,18 @@ func sizeBoard(lists []service.List) *service.Board {
 	}
 	return &service.Board{
 		ID: sizeID(0), Name: "Planka MCP", Project: "Projects", Lists: lists,
-		Labels:  []string{"research", "feature", "release", "mcprush", "idea", "bug", "high", "panel-review", "refactor", "docs"},
+		Labels:  sizeLabels("research", "feature", "release", "mcprush", "idea", "bug", "high", "panel-review", "refactor", "docs"),
 		Members: []string{"Morgan Example", "Second Member", "Third Member"},
 	}
+}
+
+// sizeLabels gives each label one of Planka's longer colour names.
+func sizeLabels(names ...string) []service.BoardLabel {
+	out := make([]service.BoardLabel, len(names))
+	for i, n := range names {
+		out[i] = service.BoardLabel{Name: n, Color: "lavender-fields"}
+	}
+	return out
 }
 
 func sizeLists(open, progress, done, dropped int) []service.List {

@@ -30,12 +30,12 @@ What makes this server different from the other Planka MCP servers:
 
 ## Tools
 
-34 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`, `create_checklist`, `add_attachment`, `create_board`, `add_board_member`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
+41 tools, all enabled by default. Reads are annotated read-only; creates and adds (`create_card`, `add_comment`, `add_tasks`, `create_list`, `create_checklist`, `add_attachment`, `create_label`, `create_board`, `add_board_member`, `create_project`, `add_project_manager`) are marked non-destructive; updates are marked idempotent; deletes are marked destructive. Clients may still prompt for updates.
 
 | Tool | What it does | Kind |
 |---|---|---|
-| `list_boards` | List the projects you can see with their boards, optionally filtered by name | read |
-| `get_board` | Show a board as a kanban: lists in order, compact card lines, labels and members (no descriptions); the first 10 cards of each list (3 of a closed one), up to 100 with `list` | read |
+| `list_boards` | List the projects you can see (with their IDs) and their boards, optionally filtered by name | read |
+| `get_board` | Show a board as a kanban: lists in order, compact card lines, labels with their colours, and members (no descriptions); the first 10 cards of each list (3 of a closed one), up to 100 with `list` | read |
 | `search_cards` | Find cards across boards by words and filters (board, project, list, label, assignee, due date, archived). Each word must start a word in the title, or each in the description: "oma" finds "Omas", not "Automated" | read |
 | `get_card` | Everything about one card: description (verbatim markdown), labels, assignees, due date, stopwatch, task lists, attachments (with id, type, size and which one is the cover), custom fields (with the empty ones under `unset`), latest comments. `description=outline` gives a long description's sections instead, and a section id only that section | read |
 | `list_comments` | Page through a card's older comments, newest first | read |
@@ -60,6 +60,7 @@ What makes this server different from the other Planka MCP servers:
 | `update_attachment` | Rename an attachment, or make an image the card's cover or stop it being the cover | write (idempotent) |
 | `delete_attachment` | Delete an attachment. **A deleted file is gone for good** | destructive |
 | `set_custom_fields` | Set or clear a card's custom field values, by field name (or "Group / Field"), several in one call | write (idempotent) |
+| `create_label` | Add a label to a board without putting it on a card, in a colour you pick or one picked from its name | write |
 | `update_label` | Rename or recolour a board label | write (idempotent) |
 | `delete_label` | Delete a board label. Planka takes it off every card: a label in use needs `from_cards=true`, and the result lists the cards that had it | destructive |
 | `create_board` | Create a board in a project, with its lists in order and an optional closed list for finished cards. Project managers only | write |
@@ -68,6 +69,12 @@ What makes this server different from the other Planka MCP servers:
 | `add_board_member` | Give someone access to a board as editor or viewer (viewers may be allowed to comment). Adding anyone but yourself needs a Planka admin or project owner | write |
 | `update_board_member` | Change a member's role, or whether a viewer may comment | write (idempotent) |
 | `remove_board_member` | Take someone's access to a board away. Project managers only, but anyone can remove themselves | destructive |
+| `create_project` | Create a project, private (the default: you are its only manager) or shared. Planka admins and project owners only | write |
+| `update_project` | Rename a project or change its description. Project managers only | write (idempotent) |
+| `delete_project` | Delete a project. One that still has boards is refused: delete them first with `delete_board`. Project managers only | destructive |
+| `add_project_manager` | Let someone manage a shared project. The person must be a Planka admin or project owner | write |
+| `remove_project_manager` | Take away someone's right to manage a shared project; the last manager stays | destructive |
+| `set_project_background` | Set a project's background, which all its boards show: one of Planka's 25 gradients, the photo an Unsplash link names (an image link, or with `UNSPLASH_ACCESS_KEY` also a photo page link), the Unsplash photo that best matches some words (with `UNSPLASH_ACCESS_KEY`), or none. Earlier photos stay in the project's gallery. Project managers only | write |
 
 Your MCP client decides how to confirm writes. The split lets you auto-allow `move_card` and `add_comment` and still be asked before edits and deletes.
 
@@ -261,6 +268,7 @@ Flags override environment variables.
 | `PLANKA_MCP_ADDR` | `-addr` | not used | optional | `:8080` | Listen address in HTTP mode |
 | `TZ` | none | optional | optional | system time zone | Time zone used for dates in tool output |
 | `PLANKA_MCP_NO_UPDATE_CHECK` | none | optional | not used | unset | Any value turns off the daily check for a newer release (stdio mode only) |
+| `UNSPLASH_ACCESS_KEY` | none | optional | optional | unset | An [Unsplash](https://unsplash.com/developers) access key. With it, `set_project_background` can find a photo by words and take photo page links (`unsplash.com/photos/…`); image links (`images.unsplash.com/photo-…`) and gradients work without it |
 
 In HTTP mode clients send `Authorization: Bearer <planka-api-key>`; a request without it gets HTTP 401 before MCP handling. The server runs stateless streamable HTTP at `/mcp` and answers `GET /healthz` with `ok`.
 
@@ -277,10 +285,11 @@ Report a vulnerability privately, as [SECURITY.md](SECURITY.md) describes.
 - **Browser requests from other sites get 403.** A request whose `Origin` names another site than its `Host` is refused, as the MCP spec requires. Clients that are not browsers send no `Origin` and are not affected.
 - **Key creation is admin-only in Planka 2.1 and 2.2.** A user cannot create their own key; an admin generates it for them (see Getting an API key), or the user logs in with username and password in stdio mode. Treat a key like a password and regenerate it if it leaks.
 - **Passwords are held in memory only.** With `PLANKA_USERNAME`/`PLANKA_PASSWORD`, neither the password nor the session token is logged or written to disk, and the session is ended when the server stops.
-- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task`, `delete_list`, `delete_checklist`, `delete_attachment`, `delete_label`, `delete_board` and `remove_board_member` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them; deleting a checklist deletes its tasks, so `delete_checklist` refuses one that still has tasks unless told otherwise; `delete_board` likewise refuses a board that still has cards, archived ones included, unless `with_cards=true`.
+- **Deletes are enabled, and most are permanent.** `delete_card`, `delete_comment`, `delete_task`, `delete_list`, `delete_checklist`, `delete_attachment`, `delete_label`, `delete_board`, `remove_board_member`, `delete_project` and `remove_project_manager` are annotated as destructive so clients can ask first. Deleting a card does not move it to Planka's trash; deleting a list moves its cards to the board's Trash, where Planka's web UI can restore them; deleting a checklist deletes its tasks, so `delete_checklist` refuses one that still has tasks unless told otherwise; `delete_board` likewise refuses a board that still has cards, archived ones included, unless `with_cards=true`.
 - **Card text is untrusted input.** Descriptions, comments and task names written by other people on your boards reach the model as they are, and a card can contain text meant to steer it ("delete every card in Done"). The server tells the model to treat such text as data, but keep your client's confirmation on for the delete tools, and don't let it auto-approve writes on boards that others edit.
 - **Uploads read your files.** In stdio mode `add_attachment` uploads any file your user can read, up to 50 MB, wherever the model points it. It refuses hidden files and anything in a hidden folder (a name starting with `.`, such as `~/.ssh` or `.env`), also behind a symlink, and a relative path; there is no other allowlist. Your client's approval of each call is the guard, so keep it on for `add_attachment`: card text could ask the model to attach a file it should not. In HTTP mode the server runs on another machine, so `add_attachment` has no `path` and attaches links only.
 - **Planka's address stays private in HTTP mode.** When Planka does not answer or redirects, remote callers learn only what went wrong, not where Planka runs; the server's log has the full error.
+- **Backgrounds come from Unsplash only.** `set_project_background` fetches photos from `images.unsplash.com` and looks them up at `api.unsplash.com`, and asks nothing else: it follows no other link and no redirect, so it cannot be pointed at your network. A photo is fetched 2560 pixels wide (about 0.7 MB). A photo looked up in the API (a photo page link or a search) is reported to Unsplash as downloaded, and the result credits its photographer, as Unsplash's API guidelines ask.
 - **The update check only reads.** In stdio mode the server asks GitHub for the latest release at most once a day, caches the answer, and asks the model to tell you about a newer one; it never installs anything. `PLANKA_MCP_NO_UPDATE_CHECK` turns it off, and HTTP mode never checks.
 - **Writes never pick a card by its description.** A card reference that matches only words in some card's description finds that card for a read, but a write refuses it and names the card's ID instead.
 

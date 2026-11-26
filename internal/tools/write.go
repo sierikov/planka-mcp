@@ -21,6 +21,7 @@ func registerWriteTools(server *mcp.Server, deps Deps, zone string) {
 	registerLabelTools(server, deps.Labels)
 	registerCustomFieldTools(server, deps.CustomFields)
 	registerBoardTools(server, deps.Boards)
+	registerProjectTools(server, deps.Projects, deps.PhotoSearch)
 	registerDescriptionTools(server, deps.Cards)
 }
 

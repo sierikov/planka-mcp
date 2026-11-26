@@ -146,6 +146,17 @@ func TestLoadConfigPublicURL(t *testing.T) {
 	assert.Contains(t, err.Error(), `PLANKA_PUBLIC_URL "planka.example.com" is not an http(s) URL`)
 }
 
+// TestLoadConfigUnsplashKey: the key is optional and trimmed.
+func TestLoadConfigUnsplashKey(t *testing.T) {
+	cfg, err := loadConfig(nil, env(map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k", "UNSPLASH_ACCESS_KEY": " abc \n"}))
+	require.NoError(t, err)
+	assert.Equal(t, "abc", cfg.UnsplashKey)
+
+	cfg, err = loadConfig(nil, env(map[string]string{"PLANKA_URL": "http://p", "PLANKA_API_KEY": "k"}))
+	require.NoError(t, err)
+	assert.Empty(t, cfg.UnsplashKey)
+}
+
 func TestLoadConfigChecksTheURL(t *testing.T) {
 	for _, bad := range []string{"planka.example.com", "ftp://planka.example.com", "https://", "http:///boards"} {
 		t.Run(bad, func(t *testing.T) {

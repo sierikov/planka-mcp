@@ -23,6 +23,7 @@ import (
 	"github.com/sierikov/planka-mcp/internal/planka"
 	"github.com/sierikov/planka-mcp/internal/planka/plankatest"
 	"github.com/sierikov/planka-mcp/internal/tools"
+	"github.com/sierikov/planka-mcp/internal/unsplash"
 )
 
 // headerTransport adds fixed headers to every request.
@@ -58,8 +59,8 @@ func httpHarnessWith(t *testing.T, logger *slog.Logger, extra map[string]any, ke
 		routes[k] = v
 	}
 	fake = plankatest.NewServer(t, routes, plankatest.WithKeys(keys...))
-	client := planka.NewClient(fake.URL, planka.WithRemoteCallers()) // as runHTTP
-	server := tools.NewServer(newDeps(client, "", false), "test")    // as runHTTP: no uploads
+	client := planka.NewClient(fake.URL, planka.WithRemoteCallers())                // as runHTTP
+	server := tools.NewServer(newDeps(client, "", false, unsplash.New("")), "test") // as runHTTP: no uploads
 	srv = httptest.NewServer(newHTTPHandler(server, logger))
 	t.Cleanup(srv.Close)
 	return srv, fake
@@ -357,7 +358,7 @@ func TestHTTPCallersDoNotLearnPlankasAddress(t *testing.T) {
 	downURL := down.URL
 	down.Close()
 	client := planka.NewClient(downURL, planka.WithRemoteCallers())
-	srv := httptest.NewServer(newHTTPHandler(tools.NewServer(newDeps(client, "", false), "test"), discardLogger()))
+	srv := httptest.NewServer(newHTTPHandler(tools.NewServer(newDeps(client, "", false, unsplash.New("")), "test"), discardLogger()))
 	t.Cleanup(srv.Close)
 
 	res, err := connectHTTP(t, srv, "k1").CallTool(t.Context(), &mcp.CallToolParams{Name: "list_boards", Arguments: map[string]any{}})

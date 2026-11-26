@@ -89,6 +89,12 @@
           "description": "Your Planka password, used with PLANKA_USERNAME. Not for single sign-on or two-factor accounts: those need an API key.",
           "isRequired": false,
           "isSecret": true
+        },
+        {
+          "name": "UNSPLASH_ACCESS_KEY",
+          "description": "Optional Unsplash access key: lets set_project_background find a photo by words and take unsplash.com photo page links. Image links (images.unsplash.com) and gradients work without it.",
+          "isRequired": false,
+          "isSecret": true
         }
       ]
     },
@@ -115,6 +121,12 @@
           "description": "The address people open Planka at, for card links in results, when PLANKA_URL is an internal one such as http://planka:1337. Defaults to PLANKA_URL.",
           "placeholder": "https://planka.example.com",
           "isRequired": false
+        },
+        {
+          "name": "UNSPLASH_ACCESS_KEY",
+          "description": "Optional Unsplash access key: lets set_project_background find a photo by words and take unsplash.com photo page links. Image links (images.unsplash.com) and gradients work without it.",
+          "isRequired": false,
+          "isSecret": true
         }
       ],
       "transport": {

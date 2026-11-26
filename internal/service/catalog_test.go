@@ -161,8 +161,8 @@ func TestListBoardsQueryFilters(t *testing.T) {
 		{
 			name: "empty query returns everything, boards ordered by position",
 			want: []ProjectBoards{
-				{Project: "Personal", Boards: []BoardRef{{ID: "1", Name: "Inbox", Project: "Personal"}}},
-				{Project: "Work", Boards: []BoardRef{
+				{ProjectID: "p1", Project: "Personal", Boards: []BoardRef{{ID: "1", Name: "Inbox", Project: "Personal"}}},
+				{ProjectID: "p2", Project: "Work", Boards: []BoardRef{
 					{ID: "2", Name: "Inbox", Project: "Work"},
 					{ID: "3", Name: "Sprint", Project: "Work"},
 				}},
@@ -171,7 +171,7 @@ func TestListBoardsQueryFilters(t *testing.T) {
 		{
 			name:  "a matching project keeps all its boards",
 			query: "WORK",
-			want: []ProjectBoards{{Project: "Work", Boards: []BoardRef{
+			want: []ProjectBoards{{ProjectID: "p2", Project: "Work", Boards: []BoardRef{
 				{ID: "2", Name: "Inbox", Project: "Work"},
 				{ID: "3", Name: "Sprint", Project: "Work"},
 			}}},
@@ -180,8 +180,8 @@ func TestListBoardsQueryFilters(t *testing.T) {
 			name:  "board name matches keep only matching boards, empty projects are dropped",
 			query: "inb",
 			want: []ProjectBoards{
-				{Project: "Personal", Boards: []BoardRef{{ID: "1", Name: "Inbox", Project: "Personal"}}},
-				{Project: "Work", Boards: []BoardRef{{ID: "2", Name: "Inbox", Project: "Work"}}},
+				{ProjectID: "p1", Project: "Personal", Boards: []BoardRef{{ID: "1", Name: "Inbox", Project: "Personal"}}},
+				{ProjectID: "p2", Project: "Work", Boards: []BoardRef{{ID: "2", Name: "Inbox", Project: "Work"}}},
 			},
 		},
 		{name: "no match", query: "zzz", want: []ProjectBoards{}},

@@ -30,6 +30,10 @@ type Config struct {
 	Transport string
 	// Addr is the listen address in http mode.
 	Addr string
+	// UnsplashKey is an Unsplash access key. It lets set_project_background
+	// find a photo by words and take photo page links; image links work
+	// without it.
+	UnsplashKey string
 }
 
 const (
@@ -51,6 +55,8 @@ func loadConfig(args []string, getenv func(string) string) (Config, error) {
 		Password:  strings.TrimRight(getenv("PLANKA_PASSWORD"), "\r\n"),
 		Transport: getenv("PLANKA_MCP_TRANSPORT"),
 		Addr:      getenv("PLANKA_MCP_ADDR"),
+		// An empty key turns the search off.
+		UnsplashKey: strings.TrimSpace(getenv("UNSPLASH_ACCESS_KEY")),
 	}
 	if cfg.Transport == "" {
 		cfg.Transport = transportStdio

@@ -3,6 +3,7 @@ package service
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 
@@ -60,6 +61,56 @@ func TestLabelColorForIsStableAndNeverGrey(t *testing.T) {
 		seen[c] = true
 	}
 	assert.Greater(t, len(seen), 20, "names spread over the palette")
+}
+
+func TestCreateLabelAddsItAfterTheOthers(t *testing.T) {
+	f := newLabelsFixture(t)
+	f.serveBoard()
+	f.api.EXPECT().CreateLabel(mock.Anything, "b1", "Release", labelColorFor("Release"), float64(2+positionGap)).
+		Return(&planka.Label{ID: "b1-rel", Name: new("Release"), Color: labelColorFor("Release")}, nil).Once()
+
+	got, err := f.labels.Create(t.Context(), CreateLabel{Board: "B1", Name: " Release "})
+
+	require.NoError(t, err)
+	assert.Equal(t, &LabelResult{ID: "b1-rel", Name: "Release", Color: labelColorFor("Release")}, got)
+}
+
+func TestCreateLabelTakesTheColourGiven(t *testing.T) {
+	f := newLabelsFixture(t)
+	f.serveBoard()
+	f.api.EXPECT().CreateLabel(mock.Anything, "b1", "Release", "berry-red", mock.Anything).
+		Return(&planka.Label{ID: "b1-rel", Name: new("Release"), Color: "berry-red"}, nil).Once()
+
+	got, err := f.labels.Create(t.Context(), CreateLabel{Board: "B1", Name: "Release", Color: new("berry-red")})
+
+	require.NoError(t, err)
+	assert.Equal(t, "berry-red", got.Color)
+}
+
+func TestCreateLabelRefuses(t *testing.T) {
+	for name, tc := range map[string]struct {
+		in    CreateLabel
+		board bool
+		want  string
+	}{
+		"empty name":  {CreateLabel{Board: "B1", Name: " "}, false, "label name is empty"},
+		"bad colour":  {CreateLabel{Board: "B1", Name: "x", Color: new("red")}, false, `unknown label color "red"`},
+		"taken name":  {CreateLabel{Board: "B1", Name: "BUG"}, true, `already has a label "bug" (id b1-bug)`},
+		"empty board": {CreateLabel{Name: "x"}, false, "board is empty"},
+		"long name":   {CreateLabel{Board: "B1", Name: strings.Repeat("x", maxLabelName+1)}, false, "longer than 128"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			f := newLabelsFixture(t)
+			if tc.board {
+				f.serveBoard()
+			}
+
+			_, err := f.labels.Create(t.Context(), tc.in)
+
+			require.Error(t, err)
+			assert.Contains(t, err.Error(), tc.want)
+		})
+	}
 }
 
 func TestUpdateLabelRenamesAndRecolours(t *testing.T) {

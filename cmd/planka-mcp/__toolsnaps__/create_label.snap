@@ -1,0 +1,80 @@
+{
+  "annotations": {
+    "destructiveHint": false,
+    "idempotentHint": false,
+    "openWorldHint": false,
+    "readOnlyHint": false
+  },
+  "description": "Use this to add a label to a Planka board without putting it on a card. To create a label while labelling a card, use create_card or update_card with create_labels instead. Returns the label (id, name, color).",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "board": {
+        "description": "board ID, URL or name",
+        "type": "string"
+      },
+      "color": {
+        "description": "one of Planka's label colours (default: one picked from the name)",
+        "enum": [
+          "muddy-grey",
+          "autumn-leafs",
+          "morning-sky",
+          "antique-blue",
+          "egg-yellow",
+          "desert-sand",
+          "dark-granite",
+          "fresh-salad",
+          "lagoon-blue",
+          "midnight-blue",
+          "light-orange",
+          "pumpkin-orange",
+          "light-concrete",
+          "sunny-grass",
+          "navy-blue",
+          "lilac-eyes",
+          "apricot-red",
+          "orange-peel",
+          "silver-glint",
+          "bright-moss",
+          "deep-ocean",
+          "summer-sky",
+          "berry-red",
+          "light-cocoa",
+          "grey-stone",
+          "tank-green",
+          "coral-green",
+          "sugar-plum",
+          "pink-tulip",
+          "shady-rust",
+          "wet-rock",
+          "wet-moss",
+          "turquoise-sea",
+          "lavender-fields",
+          "piggy-red",
+          "light-mud",
+          "gun-metal",
+          "modern-green",
+          "french-coast",
+          "sweet-lilac",
+          "red-burgundy",
+          "pirate-gold"
+        ],
+        "type": [
+          "null",
+          "string"
+        ]
+      },
+      "name": {
+        "description": "the new label's name; it must differ from the board's other labels",
+        "type": "string"
+      }
+    },
+    "required": [
+      "board",
+      "name"
+    ],
+    "type": "object"
+  },
+  "name": "create_label",
+  "title": "Create label"
+}

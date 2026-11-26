@@ -74,7 +74,7 @@ func registerReadTools(server *mcp.Server, deps Deps) {
 		Name:  "list_boards",
 		Title: "List boards",
 		Description: "Use this to find which Planka boards exist, or to look a board up by name. " +
-			"Returns every project you can see with its boards as {id, name}, optionally filtered by name.",
+			"Returns every project you can see (project, project_id) with its boards as {id, name}, optionally filtered by name.",
 		Annotations: readOnly,
 	}, listBoards(deps.Catalog))
 
@@ -83,7 +83,7 @@ func registerReadTools(server *mcp.Server, deps Deps) {
 		Title: "Get board",
 		Description: "Use this to see a Planka board as a kanban: what is in each list, or what is left in one list. " +
 			"Returns the board's lists in order with compact card lines (id, title, labels, assignees, due, tasks done/total), " +
-			"plus the board's label and member names; descriptions are not included. " +
+			"plus the board's labels (name and colour) and member names; descriptions are not included. " +
 			"Each list shows its first 10 cards (3 for a closed list) and how many more it has. " +
 			"To see one list's cards pass list; to find cards across boards, use search_cards instead.",
 		Annotations: readOnly,

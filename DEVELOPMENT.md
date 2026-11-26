@@ -60,6 +60,8 @@ make e2e PLANKA_PORT=3334
 
 The server under test runs in a fixed time zone that is not UTC, and the tests check due dates against what Planka itself stored. Without a reachable Planka the tests skip, unless `CI=true`, where they fail. To point them at another instance, set `PLANKA_E2E_URL` and `PLANKA_E2E_API_KEY` (an admin's key; without it they bootstrap one). They never read `PLANKA_URL` or `PLANKA_API_KEY`, so a shell set up for your real Planka cannot send them there.
 
+The tests never reach Unsplash, and the server under test gets no `UNSPLASH_ACCESS_KEY`. `E2E_UNSPLASH=1 make e2e` adds one test that sets a real Unsplash photo from its image link as a background; it downloads about 0.7 MB from Unsplash. With `UNSPLASH_ACCESS_KEY` set as well, a second test gives that key to the server under test and sets photos from a photo page link and from a search: two more photos, and four of the key's hourly requests.
+
 ## Fixtures
 
 The fixtures in `internal/planka/testdata/` are a frozen snapshot of real Planka 2.2.1 responses. Refresh them only deliberately with `make fixtures`, against a fresh instance (`make planka-down planka-up` first). It re-seeds Planka and changes every ID, so the tests that refer to fixture IDs have to be updated with it. See `internal/planka/testdata/README.md`.

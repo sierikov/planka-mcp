@@ -118,6 +118,41 @@ func TestLabelTools(t *testing.T) {
 	assert.Empty(t, p.boardLabels(t, b))
 }
 
+// TestCreateLabelTool makes labels without a card, in a picked colour and in
+// one given, and get_board shows them with their colours.
+func TestCreateLabelTool(t *testing.T) {
+	p, b := newFlowBoard(t)
+	s := connectStdio(t, env.key)
+
+	picked := callInto[struct {
+		ID    string `json:"id"`
+		Name  string `json:"name"`
+		Color string `json:"color"`
+	}](t, s, "create_label", map[string]any{"board": b.Name, "name": "Blocked"})
+	assert.NotEmpty(t, picked.ID)
+	assert.NotEqual(t, "muddy-grey", picked.Color, "a colour is picked from the name")
+
+	given := callInto[struct{ Color string }](t, s, "create_label", map[string]any{"board": b.ID, "name": "Urgent", "color": "berry-red"})
+	assert.Equal(t, "berry-red", given.Color)
+
+	text, isError := call(t, s, "create_label", map[string]any{"board": b.ID, "name": "urgent"})
+	assert.True(t, isError, text)
+	assert.Contains(t, text, `already has a label "Urgent"`)
+
+	assert.Equal(t, map[string]string{"Blocked": picked.Color, "Urgent": "berry-red"}, p.boardLabels(t, b))
+	board := callInto[struct {
+		Labels []struct {
+			Name  string `json:"name"`
+			Color string `json:"color"`
+		} `json:"labels"`
+	}](t, s, "get_board", map[string]any{"board": b.ID})
+	require.Len(t, board.Labels, 2)
+	assert.Equal(t, "Blocked", board.Labels[0].Name)
+	assert.Equal(t, picked.Color, board.Labels[0].Color)
+	assert.Equal(t, "Urgent", board.Labels[1].Name)
+	assert.Equal(t, "berry-red", board.Labels[1].Color)
+}
+
 // TestSearchMatchesAtWordStarts: "oma" finds a word that starts with it, in
 // the title or (marked) in the description, and not "Automated".
 func TestSearchMatchesAtWordStarts(t *testing.T) {

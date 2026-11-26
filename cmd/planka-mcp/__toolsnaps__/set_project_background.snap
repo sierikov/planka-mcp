@@ -1,0 +1,62 @@
+{
+  "annotations": {
+    "idempotentHint": false,
+    "openWorldHint": true,
+    "readOnlyHint": false
+  },
+  "description": "Use this to set a Planka project's background, which all its boards show: one of Planka's gradients, the photo an Unsplash link names, or none; give exactly one. A photo is uploaded to the project, and the ones it replaces stay in its image gallery. Only a project manager can. Returns the background; for a photo also its Unsplash page and, when known, the photographer's credit, to mention with it.",
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "gradient": {
+        "description": "one of Planka's gradients",
+        "enum": [
+          "old-lime",
+          "ocean-dive",
+          "tzepesch-style",
+          "jungle-mesh",
+          "strawberry-dust",
+          "purple-rose",
+          "sun-scream",
+          "warm-rust",
+          "sky-change",
+          "green-eyes",
+          "blue-xchange",
+          "blood-orange",
+          "sour-peel",
+          "green-ninja",
+          "algae-green",
+          "coral-reef",
+          "steel-grey",
+          "heat-waves",
+          "velvet-lounge",
+          "purple-rain",
+          "blue-steel",
+          "blueish-curve",
+          "prism-light",
+          "green-mist",
+          "red-curtain"
+        ],
+        "type": "string"
+      },
+      "none": {
+        "description": "remove the background",
+        "type": "boolean"
+      },
+      "project": {
+        "description": "project ID or name; list_boards shows them",
+        "type": "string"
+      },
+      "unsplash": {
+        "description": "link to a photo's image on Unsplash, https://images.unsplash.com/photo-… (\"Copy image address\" on the photo); a photo page link (unsplash.com/photos/…) needs an Unsplash access key, which this server lacks",
+        "type": "string"
+      }
+    },
+    "required": [
+      "project"
+    ],
+    "type": "object"
+  },
+  "name": "set_project_background",
+  "title": "Set project background"
+}

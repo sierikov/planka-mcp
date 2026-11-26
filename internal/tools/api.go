@@ -58,8 +58,9 @@ type AttachmentService interface {
 	Delete(ctx context.Context, card service.CardRef, attachment string) (*service.Attachment, error)
 }
 
-// LabelService changes and deletes the labels of a board.
+// LabelService creates, changes and deletes the labels of a board.
 type LabelService interface {
+	Create(ctx context.Context, in service.CreateLabel) (*service.LabelResult, error)
 	Update(ctx context.Context, in service.UpdateLabel) (*service.LabelResult, error)
 	Delete(ctx context.Context, board, label string, fromCards bool) (*service.DeletedLabel, error)
 }
@@ -79,6 +80,17 @@ type BoardService interface {
 	RemoveMember(ctx context.Context, board, person string) (*service.Member, error)
 }
 
+// ProjectService creates, changes and deletes projects, and manages their
+// managers.
+type ProjectService interface {
+	Create(ctx context.Context, in service.CreateProject) (*service.ProjectResult, error)
+	Update(ctx context.Context, in service.UpdateProject) (*service.ProjectResult, error)
+	Delete(ctx context.Context, project string) (*service.ProjectResult, error)
+	AddManager(ctx context.Context, project, person string) (*service.ProjectManager, error)
+	RemoveManager(ctx context.Context, project, person string) (*service.ProjectManager, error)
+	SetBackground(ctx context.Context, in service.SetBackground) (*service.Background, error)
+}
+
 // Deps are the services the tools call. Every service is required.
 type Deps struct {
 	Catalog      CatalogService
@@ -90,6 +102,7 @@ type Deps struct {
 	Labels       LabelService
 	CustomFields CustomFieldService
 	Boards       BoardService
+	Projects     ProjectService
 
 	// PublicURL is the base of the card links in results ("" leaves them out).
 	PublicURL string
@@ -100,4 +113,8 @@ type Deps struct {
 	// machine (stdio), so local files are the user's. Without it the tool
 	// attaches links only.
 	Uploads bool
+	// PhotoSearch offers set_project_background's search and photo page
+	// links: both need an Unsplash access key. Without it the tool takes
+	// image links only.
+	PhotoSearch bool
 }
